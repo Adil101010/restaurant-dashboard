@@ -1,0 +1,171 @@
+import React, { useState } from 'react';
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  IconButton,
+  Box,
+  Avatar,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  Divider,
+  Chip,
+} from '@mui/material';
+import {
+  Menu as MenuIcon,
+  Logout,
+  Person,
+  Circle,
+} from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
+
+interface HeaderProps {
+  drawerWidth: number;
+  onMenuClick: () => void;
+}
+
+const Header = ({ drawerWidth, onMenuClick }: HeaderProps) => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = async () => {
+    handleMenuClose();
+    try {
+      await logout();
+      toast.success('Logged out successfully!');
+      navigate('/login');
+    } catch {
+      toast.error('Logout failed. Please try again.');
+    }
+  };
+
+  const handleProfile = () => {
+    handleMenuClose();
+    navigate('/profile');
+  };
+
+  return (
+    <AppBar
+      position="fixed"
+      elevation={0}
+      sx={{
+        width: { md: `calc(100% - ${drawerWidth}px)` },
+        ml: { md: `${drawerWidth}px` },
+        bgcolor: 'white',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+        color: 'text.primary',
+      }}
+    >
+      <Toolbar sx={{ justifyContent: 'space-between' }}>
+
+        {/* Left — Hamburger (mobile only) */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <IconButton
+            color="inherit"
+            edge="start"
+            onClick={onMenuClick}
+            sx={{ display: { md: 'none' } }}
+          >
+            <MenuIcon />
+          </IconButton>
+
+          <Typography variant="h6" fontWeight={700} color="text.primary">
+            {user?.restaurantName || 'Restaurant Dashboard'}
+          </Typography>
+        </Box>
+
+        {/* Right — Status + Avatar */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+
+          {/* Online Status */}
+          <Chip
+            icon={<Circle sx={{ fontSize: '10px !important', color: '#4CAF50 !important' }} />}
+            label="Online"
+            size="small"
+            sx={{
+              bgcolor: 'rgba(76,175,80,0.1)',
+              color: '#4CAF50',
+              fontWeight: 600,
+              fontSize: '0.75rem',
+              display: { xs: 'none', sm: 'flex' },
+            }}
+          />
+
+          {/* Avatar + Dropdown */}
+          <IconButton onClick={handleMenuOpen} sx={{ p: 0.5 }}>
+            <Avatar
+              sx={{
+                bgcolor: 'primary.main',
+                width: 36,
+                height: 36,
+                fontSize: '0.9rem',
+                fontWeight: 700,
+              }}
+            >
+              {user?.restaurantName?.charAt(0).toUpperCase() || 'R'}
+            </Avatar>
+          </IconButton>
+
+          {/* Dropdown Menu */}
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            PaperProps={{
+              elevation: 3,
+              sx: { mt: 1, minWidth: 200, borderRadius: 2 },
+            }}
+          >
+            {/* User Info */}
+            <Box sx={{ px: 2, py: 1.5 }}>
+              <Typography variant="subtitle2" fontWeight={700}>
+                {user?.restaurantName}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {user?.email}
+              </Typography>
+            </Box>
+
+            <Divider />
+
+            <MenuItem onClick={handleProfile} sx={{ py: 1.2 }}>
+              <ListItemIcon>
+                <Person fontSize="small" />
+              </ListItemIcon>
+              Profile
+            </MenuItem>
+
+            <Divider />
+
+            <MenuItem
+              onClick={handleLogout}
+              sx={{ py: 1.2, color: 'error.main' }}
+            >
+              <ListItemIcon>
+                <Logout fontSize="small" sx={{ color: 'error.main' }} />
+              </ListItemIcon>
+              Logout
+            </MenuItem>
+          </Menu>
+        </Box>
+      </Toolbar>
+    </AppBar>
+  );
+};
+
+export default Header;

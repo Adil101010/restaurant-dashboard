@@ -37,7 +37,7 @@ const LoginPage = () => {
     setApiError('');
     try {
       await login(data);
-      toast.success('Login successful! Welcome back 👋');
+      toast.success('Login successful! Welcome back ');
       navigate('/');
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
