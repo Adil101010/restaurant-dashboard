@@ -5,15 +5,11 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import Layout from './components/layout/Layout';
 import LoginPage from './pages/LoginPage.tsx';
+import DashboardPage from './pages/DashboardPage.tsx';
 
 
-// Placeholder pages — baad mein replace honge
-const DashboardPage = () => (
-  <div style={{ padding: 20 }}>
-    <h2>📊 Dashboard</h2>
-    <p>Analytics coming on Day 4!</p>
-  </div>
-);
+
+
 const MenuPage = () => (
   <div style={{ padding: 20 }}>
     <h2>🍽️ Menu Management</h2>
