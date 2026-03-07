@@ -1,10 +1,11 @@
 import axiosInstance from './axiosConfig';
 
 export interface RevenueData {
-  totalRevenue: number;
   todayRevenue: number;
-  weeklyRevenue: number;
-  monthlyRevenue: number;
+  weeklyRevenue: number;    
+  monthlyRevenue: number;   
+  totalRevenue: number;
+  restaurantId: number;
 }
 
 export interface OrderStatsData {

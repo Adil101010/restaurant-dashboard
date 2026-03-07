@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Box,
   Grid,
@@ -61,12 +61,10 @@ const DashboardPage = () => {
     }
   }, [user?.restaurantId]);
 
-  // Initial fetch
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  // Auto refresh every 60 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       fetchDashboardData();
@@ -96,11 +94,7 @@ const DashboardPage = () => {
             Last updated: {lastRefresh.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
           </Typography>
           <Tooltip title="Refresh">
-            <IconButton
-              onClick={handleManualRefresh}
-              size="small"
-              sx={{ color: 'primary.main' }}
-            >
+            <IconButton onClick={handleManualRefresh} size="small" sx={{ color: 'primary.main' }}>
               <Refresh />
             </IconButton>
           </Tooltip>
@@ -116,7 +110,7 @@ const DashboardPage = () => {
 
       {/* Stat Cards */}
       <Grid container spacing={3} mb={3}>
-        <Grid item xs={12} sm={6} lg={3}>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <StatCard
             title="Today's Revenue"
             value={revenueData ? formatCurrency(revenueData.todayRevenue) : '₹0'}
@@ -126,8 +120,7 @@ const DashboardPage = () => {
             subtitle="Total earnings today"
           />
         </Grid>
-
-        <Grid item xs={12} sm={6} lg={3}>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <StatCard
             title="Today's Orders"
             value={orderStats?.todayOrders ?? 0}
@@ -137,8 +130,7 @@ const DashboardPage = () => {
             subtitle="Orders received today"
           />
         </Grid>
-
-        <Grid item xs={12} sm={6} lg={3}>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <StatCard
             title="Pending Orders"
             value={orderStats?.pendingOrders ?? 0}
@@ -148,8 +140,7 @@ const DashboardPage = () => {
             subtitle="Awaiting acceptance"
           />
         </Grid>
-
-        <Grid item xs={12} sm={6} lg={3}>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <StatCard
             title="Completed Orders"
             value={orderStats?.completedOrders ?? 0}
@@ -163,17 +154,17 @@ const DashboardPage = () => {
 
       {/* Charts Row */}
       <Grid container spacing={3} mb={3}>
-        <Grid item xs={12} lg={8}>
+        <Grid size={{ xs: 12, lg: 8 }}>
           <RevenueChart data={weeklyRevenue} isLoading={isLoading} />
         </Grid>
-        <Grid item xs={12} lg={4}>
+        <Grid size={{ xs: 12, lg: 4 }}>
           <TopItemsTable items={topItems} isLoading={isLoading} />
         </Grid>
       </Grid>
 
       {/* Monthly Stats Row */}
       <Grid container spacing={3}>
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <StatCard
             title="Weekly Revenue"
             value={revenueData ? formatCurrency(revenueData.weeklyRevenue) : '₹0'}
@@ -183,7 +174,7 @@ const DashboardPage = () => {
             subtitle="This week's total"
           />
         </Grid>
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <StatCard
             title="Monthly Revenue"
             value={revenueData ? formatCurrency(revenueData.monthlyRevenue) : '₹0'}

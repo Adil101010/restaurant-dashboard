@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Card,
   CardContent,
@@ -6,7 +5,6 @@ import {
   Box,
   Skeleton,
 } from '@mui/material';
-import type { SxProps } from '@mui/material';
 
 interface StatCardProps {
   title: string;
@@ -74,7 +72,6 @@ const StatCard = ({
             )}
           </Box>
 
-          {/* Icon */}
           <Box
             sx={{
               width: 52,

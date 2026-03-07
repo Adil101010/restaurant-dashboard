@@ -6,34 +6,12 @@ import ProtectedRoute from './components/layout/ProtectedRoute';
 import Layout from './components/layout/Layout';
 import LoginPage from './pages/LoginPage.tsx';
 import DashboardPage from './pages/DashboardPage.tsx';
+import MenuPage from './pages/MenuPage';
+import OrdersPage from './pages/OrdersPage';
+import ProfilePage from './pages/ProfilePage'; 
+import SettingsPage from './pages/SettingsPage';
 
 
-
-
-const MenuPage = () => (
-  <div style={{ padding: 20 }}>
-    <h2>🍽️ Menu Management</h2>
-    <p>Coming on Day 6!</p>
-  </div>
-);
-const OrdersPage = () => (
-  <div style={{ padding: 20 }}>
-    <h2>📦 Orders</h2>
-    <p>Coming on Day 8!</p>
-  </div>
-);
-const ProfilePage = () => (
-  <div style={{ padding: 20 }}>
-    <h2>🏪 Restaurant Profile</h2>
-    <p>Coming on Day 12!</p>
-  </div>
-);
-const SettingsPage = () => (
-  <div style={{ padding: 20 }}>
-    <h2>⚙️ Settings</h2>
-    <p>Coming on Day 14!</p>
-  </div>
-);
 
 function App() {
   return (
@@ -63,10 +41,13 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route path="/" element={<DashboardPage />} />
-              <Route path="/menu" element={<MenuPage />} />
+          
               <Route path="/orders" element={<OrdersPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/menu" element={<MenuPage />} />
+              <Route path="/orders" element={<OrdersPage />} />
+
             </Route>
           </Route>
 

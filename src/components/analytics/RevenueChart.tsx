@@ -53,7 +53,7 @@ const CustomTooltip = ({ active, payload, label }: {
 };
 
 const RevenueChart = ({ data, isLoading = false }: RevenueChartProps) => {
-  const chartData = data.map((item) => ({
+ const chartData = (Array.isArray(data) ? data : []).map((item) => ({
     date: new Date(item.date).toLocaleDateString('en-IN', {
       month: 'short',
       day: 'numeric',

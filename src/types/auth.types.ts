@@ -1,14 +1,15 @@
 export interface LoginRequest {
-  email: string;
+   emailOrPhone: string;
   password: string;
 }
 
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
-  restaurantId: number;
+   userId: number; 
   restaurantName: string;
   email: string;
+  restaurantId: number; 
 }
 
 export interface AuthUser {

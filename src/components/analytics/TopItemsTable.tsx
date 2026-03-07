@@ -18,10 +18,12 @@ import { TrendingUp } from '@mui/icons-material';
 import type { TopItem } from '../../api/analyticsApi';
 import { formatCurrency } from '../../utils/formatters';
 
+
 interface TopItemsTableProps {
   items: TopItem[];
   isLoading?: boolean;
 }
+
 
 const TopItemsTable = ({ items, isLoading = false }: TopItemsTableProps) => {
   return (
@@ -40,6 +42,7 @@ const TopItemsTable = ({ items, isLoading = false }: TopItemsTableProps) => {
           </Box>
         </Box>
 
+
         {isLoading ? (
           [...Array(5)].map((_, i) => (
             <Box key={i} display="flex" alignItems="center" gap={2} mb={2}>
@@ -51,7 +54,7 @@ const TopItemsTable = ({ items, isLoading = false }: TopItemsTableProps) => {
               <Skeleton variant="text" width={60} />
             </Box>
           ))
-        ) : items.length === 0 ? (
+        ) : !items || items.length === 0 ? (
           <Box
             display="flex"
             alignItems="center"
@@ -80,63 +83,69 @@ const TopItemsTable = ({ items, isLoading = false }: TopItemsTableProps) => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {items.map((item, index) => (
-                  <TableRow
-                    key={item.menuItemId}
-                    sx={{
-                      '&:last-child td': { border: 0 },
-                      '&:hover': { bgcolor: 'rgba(255,107,53,0.04)' },
-                    }}
-                  >
-                    <TableCell sx={{ border: 0 }}>
-                      <Chip
-                        label={index + 1}
-                        size="small"
-                        sx={{
-                          bgcolor: index === 0
-                            ? 'rgba(255,193,7,0.15)'
-                            : index === 1
-                            ? 'rgba(158,158,158,0.15)'
-                            : index === 2
-                            ? 'rgba(255,152,0,0.15)'
-                            : 'rgba(0,0,0,0.06)',
-                          color: index === 0
-                            ? '#F9A825'
-                            : index === 1
-                            ? '#757575'
-                            : index === 2
-                            ? '#E65100'
-                            : 'text.secondary',
-                          fontWeight: 700,
-                          minWidth: 28,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell sx={{ border: 0 }}>
-                      <Box display="flex" alignItems="center" gap={1.5}>
-                        <Avatar
-                          src={item.imageUrl}
-                          sx={{ width: 36, height: 36, bgcolor: 'primary.light' }}
-                        >
-                          {item.menuItemName.charAt(0)}
-                        </Avatar>
-                        <Typography variant="body2" fontWeight={500}>
-                          {item.menuItemName}
+                {items.map((item, index) => {
+                  // ✅ Safe name — fallback to 'Unknown' if null/undefined
+                  const itemName = item?.menuItemName ?? 'Unknown Item';
+                  const itemInitial = itemName.charAt(0).toUpperCase();
+
+                  return (
+                    <TableRow
+                      key={item.menuItemId ?? index}
+                      sx={{
+                        '&:last-child td': { border: 0 },
+                        '&:hover': { bgcolor: 'rgba(255,107,53,0.04)' },
+                      }}
+                    >
+                      <TableCell sx={{ border: 0 }}>
+                        <Chip
+                          label={index + 1}
+                          size="small"
+                          sx={{
+                            bgcolor: index === 0
+                              ? 'rgba(255,193,7,0.15)'
+                              : index === 1
+                              ? 'rgba(158,158,158,0.15)'
+                              : index === 2
+                              ? 'rgba(255,152,0,0.15)'
+                              : 'rgba(0,0,0,0.06)',
+                            color: index === 0
+                              ? '#F9A825'
+                              : index === 1
+                              ? '#757575'
+                              : index === 2
+                              ? '#E65100'
+                              : 'text.secondary',
+                            fontWeight: 700,
+                            minWidth: 28,
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ border: 0 }}>
+                        <Box display="flex" alignItems="center" gap={1.5}>
+                          <Avatar
+                            src={item?.imageUrl}
+                            sx={{ width: 36, height: 36, bgcolor: 'primary.light' }}
+                          >
+                            {itemInitial}
+                          </Avatar>
+                          <Typography variant="body2" fontWeight={500}>
+                            {itemName}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell align="center" sx={{ border: 0 }}>
+                        <Typography variant="body2" fontWeight={600}>
+                          {item?.totalQuantity ?? 0}
                         </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell align="center" sx={{ border: 0 }}>
-                      <Typography variant="body2" fontWeight={600}>
-                        {item.totalQuantity}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right" sx={{ border: 0 }}>
-                      <Typography variant="body2" fontWeight={600} color="primary.main">
-                        {formatCurrency(item.totalRevenue)}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell align="right" sx={{ border: 0 }}>
+                        <Typography variant="body2" fontWeight={600} color="primary.main">
+                          {formatCurrency(item?.totalRevenue ?? 0)}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>
@@ -145,5 +154,6 @@ const TopItemsTable = ({ items, isLoading = false }: TopItemsTableProps) => {
     </Card>
   );
 };
+
 
 export default TopItemsTable;
