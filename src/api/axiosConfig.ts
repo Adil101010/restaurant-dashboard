@@ -1,8 +1,10 @@
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: BASE_URL,
@@ -11,6 +13,7 @@ const axiosInstance: AxiosInstance = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
 
 // Request Interceptor — har request mein JWT token attach karo
 axiosInstance.interceptors.request.use(
@@ -24,12 +27,14 @@ axiosInstance.interceptors.request.use(
   (error: AxiosError) => Promise.reject(error)
 );
 
+
 // Token refresh queue
 let isRefreshing = false;
 let failedQueue: {
   resolve: (value: unknown) => void;
   reject: (reason?: unknown) => void;
 }[] = [];
+
 
 const processQueue = (error: AxiosError | null, token: string | null = null) => {
   failedQueue.forEach((prom) => {
@@ -42,7 +47,8 @@ const processQueue = (error: AxiosError | null, token: string | null = null) => 
   failedQueue = [];
 };
 
-// Response Interceptor — 401 pe auto token refresh
+
+// Response Interceptor — 401 pe auto token refresh + Global Error Toasts
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: AxiosError) => {
@@ -50,6 +56,7 @@ axiosInstance.interceptors.response.use(
       _retry?: boolean;
     };
 
+    //  401 — Token refresh logic
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -71,6 +78,7 @@ axiosInstance.interceptors.response.use(
 
       if (!refreshToken) {
         localStorage.clear();
+        toast.error('Session expired. Please login again.');
         window.location.href = '/login';
         return Promise.reject(error);
       }
@@ -94,6 +102,7 @@ axiosInstance.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError as AxiosError, null);
         localStorage.clear();
+        toast.error('Session expired. Please login again.'); 
         window.location.href = '/login';
         return Promise.reject(refreshError);
       } finally {
@@ -101,8 +110,23 @@ axiosInstance.interceptors.response.use(
       }
     }
 
+    //  Global Error Toasts — 401 ke baad wale errors
+    const status = error.response?.status;
+    const message = (error.response?.data as { message?: string })?.message;
+
+    if (status === 403) {
+      toast.error('Access denied. You do not have permission.');
+    } else if (status === 404) {
+      toast.error(message || 'Resource not found.');
+    } else if (status === 500) {
+      toast.error('Server error. Please try again later.');
+    } else if (!error.response) {
+      toast.error('Network error. Check your connection.');
+    }
+
     return Promise.reject(error);
   }
 );
+
 
 export default axiosInstance;

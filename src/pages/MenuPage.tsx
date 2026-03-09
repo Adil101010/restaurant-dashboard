@@ -1,11 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react'; // ✅ React + useMemo add
 import {
   Box, Grid, Typography, Button, TextField, InputAdornment,
   Card, CardContent, CardMedia, Chip, IconButton, Switch,
   Dialog, DialogTitle, DialogContent, DialogActions,
   FormControl, InputLabel, Select, MenuItem as MuiMenuItem,
   FormControlLabel, Checkbox, Skeleton, Alert, Tooltip,
-  
 } from '@mui/material';
 import {
   Add, Search, Edit, Delete, FilterList,
@@ -18,8 +17,10 @@ import {
   type Category, CATEGORY_LABELS,
 } from '../api/menuApi';
 import { formatCurrency } from '../utils/formatters';
+import EmptyState from '../components/common/EmptyState';
+import useDebounce from '../hooks/useDebounce';
 
-// ─── Empty Form ────────────────────────────────────────────────
+
 const emptyForm = (): MenuItemRequest => ({
   restaurantId: 0,
   name: '',
@@ -39,37 +40,31 @@ const emptyForm = (): MenuItemRequest => ({
   spiceLevel: 0,
 });
 
-// ─── Item Card ─────────────────────────────────────────────────
-const MenuItemCard = ({
-  item,
-  onEdit,
-  onDelete,
-  onToggle,
+
+// ✅ React.memo — unnecessary re-renders rokta hai
+const MenuItemCard = React.memo(({
+  item, onEdit, onDelete, onToggle,
 }: {
   item: MenuItem;
   onEdit: (item: MenuItem) => void;
   onDelete: (item: MenuItem) => void;
   onToggle: (item: MenuItem) => void;
 }) => (
-  <Card
-    sx={{
-      borderRadius: 3,
-      boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-      transition: 'transform 0.2s',
-      opacity: item.isAvailable ? 1 : 0.65,
-      '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 6px 20px rgba(0,0,0,0.12)' },
-    }}
-  >
-    {/* Image */}
+  <Card sx={{
+    borderRadius: 3,
+    boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+    transition: 'transform 0.2s',
+    opacity: item.isAvailable ? 1 : 0.65,
+    '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 6px 20px rgba(0,0,0,0.12)' },
+  }}>
     <Box sx={{ position: 'relative' }}>
       <CardMedia
-        component="img"
-        height={160}
+        component="img" height={160}
         image={item.imageUrl || 'https://via.placeholder.com/300x160?text=No+Image'}
         alt={item.name}
+        loading="lazy" // ✅ Image lazy loading
         sx={{ objectFit: 'cover' }}
       />
-      {/* Badges */}
       <Box sx={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
         {item.isBestseller && (
           <Chip label="Bestseller" size="small" icon={<Star sx={{ fontSize: 12 }} />}
@@ -84,26 +79,15 @@ const MenuItemCard = ({
             sx={{ bgcolor: '#f44336', color: 'white', fontWeight: 700, fontSize: 10 }} />
         )}
       </Box>
-      {/* Availability toggle */}
       <Box sx={{ position: 'absolute', top: 6, right: 6, bgcolor: 'rgba(255,255,255,0.9)', borderRadius: 2, px: 0.5 }}>
-        <Switch
-          size="small"
-          checked={item.isAvailable ?? true}
-          onChange={() => onToggle(item)}
-          color="success"
-        />
+        <Switch size="small" checked={item.isAvailable ?? true}
+          onChange={() => onToggle(item)} color="success" />
       </Box>
     </Box>
 
     <CardContent sx={{ p: 2 }}>
-      {/* Category chip */}
-      <Chip
-        label={CATEGORY_LABELS[item.category]}
-        size="small"
-        sx={{ bgcolor: '#FFF3EC', color: '#FF6B35', fontWeight: 600, fontSize: 10, mb: 1 }}
-      />
-
-      {/* Name & Price */}
+      <Chip label={CATEGORY_LABELS[item.category]} size="small"
+        sx={{ bgcolor: '#FFF3EC', color: '#FF6B35', fontWeight: 600, fontSize: 10, mb: 1 }} />
       <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={0.5}>
         <Typography variant="subtitle1" fontWeight={700} sx={{ flex: 1, pr: 1, lineHeight: 1.3 }}>
           {item.name}
@@ -112,16 +96,12 @@ const MenuItemCard = ({
           {formatCurrency(item.price)}
         </Typography>
       </Box>
-
-      {/* Description */}
       {item.description && (
         <Typography variant="caption" color="text.secondary"
           sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', mb: 1 }}>
           {item.description}
         </Typography>
       )}
-
-      {/* Meta row */}
       <Box display="flex" gap={1.5} mb={1.5} flexWrap="wrap">
         {item.preparationTime && (
           <Box display="flex" alignItems="center" gap={0.3}>
@@ -139,8 +119,6 @@ const MenuItemCard = ({
           </Box>
         )}
       </Box>
-
-      {/* Actions */}
       <Box display="flex" justifyContent="flex-end" gap={1}>
         <Tooltip title="Edit">
           <IconButton size="small" onClick={() => onEdit(item)}
@@ -157,9 +135,9 @@ const MenuItemCard = ({
       </Box>
     </CardContent>
   </Card>
-);
+));
 
-// ─── Add / Edit Dialog ─────────────────────────────────────────
+
 const MenuItemDialog = ({
   open, onClose, onSave, initial, restaurantId,
 }: {
@@ -219,18 +197,15 @@ const MenuItemDialog = ({
       </DialogTitle>
       <DialogContent dividers>
         <Grid container spacing={2} sx={{ pt: 1 }}>
-          {/* Name */}
           <Grid size={{ xs: 12, sm: 8 }}>
             <TextField fullWidth label="Item Name *" value={form.name}
               onChange={e => set('name', e.target.value)} size="small" />
           </Grid>
-          {/* Price */}
           <Grid size={{ xs: 12, sm: 4 }}>
             <TextField fullWidth label="Price *" type="number" value={form.price}
               onChange={e => set('price', parseFloat(e.target.value))} size="small"
               InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }} />
           </Grid>
-          {/* Category */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
               <InputLabel>Category *</InputLabel>
@@ -242,50 +217,42 @@ const MenuItemDialog = ({
               </Select>
             </FormControl>
           </Grid>
-          {/* Prep time */}
           <Grid size={{ xs: 12, sm: 3 }}>
             <TextField fullWidth label="Prep Time (min)" type="number"
               value={form.preparationTime} size="small"
               onChange={e => set('preparationTime', parseInt(e.target.value))} />
           </Grid>
-          {/* Calories */}
           <Grid size={{ xs: 12, sm: 3 }}>
             <TextField fullWidth label="Calories (kcal)" type="number"
               value={form.calories || ''} size="small"
               onChange={e => set('calories', parseInt(e.target.value))} />
           </Grid>
-          {/* Description */}
           <Grid size={{ xs: 12 }}>
             <TextField fullWidth label="Description" multiline rows={2}
               value={form.description} size="small"
               onChange={e => set('description', e.target.value)} />
           </Grid>
-          {/* Image URL */}
           <Grid size={{ xs: 12 }}>
             <TextField fullWidth label="Image URL" value={form.imageUrl}
               onChange={e => set('imageUrl', e.target.value)} size="small"
               placeholder="https://example.com/image.jpg" />
           </Grid>
-          {/* Ingredients */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Ingredients (comma separated)"
               value={form.ingredients} size="small"
               onChange={e => set('ingredients', e.target.value)} />
           </Grid>
-          {/* Allergens */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Allergens (comma separated)"
               value={form.allergens} size="small"
               onChange={e => set('allergens', e.target.value)} />
           </Grid>
-          {/* Spice Level */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Spice Level (0-5)" type="number"
               value={form.spiceLevel} size="small"
               inputProps={{ min: 0, max: 5 }}
               onChange={e => set('spiceLevel', parseInt(e.target.value))} />
           </Grid>
-          {/* Checkboxes */}
           <Grid size={{ xs: 12 }}>
             <Box display="flex" flexWrap="wrap" gap={1}>
               {([
@@ -315,7 +282,7 @@ const MenuItemDialog = ({
   );
 };
 
-// ─── Delete Confirm Dialog ─────────────────────────────────────
+
 const DeleteDialog = ({
   item, onClose, onConfirm,
 }: { item: MenuItem | null; onClose: () => void; onConfirm: () => void }) => (
@@ -335,7 +302,7 @@ const DeleteDialog = ({
   </Dialog>
 );
 
-// ─── Main Page ─────────────────────────────────────────────────
+
 const MenuPage = () => {
   const { user } = useAuth();
   const [items, setItems] = useState<MenuItem[]>([]);
@@ -350,15 +317,18 @@ const MenuPage = () => {
 
   const restaurantId = user?.restaurantId ?? 0;
 
-  // ── Fetch ──
+  // ✅ Debounced search — 300ms delay
+  const debouncedSearch = useDebounce(search, 300);
+
   const fetchItems = useCallback(async () => {
     if (!restaurantId) return;
     setIsLoading(true);
+    setError('');
     try {
       const data = await menuApi.getByRestaurant(restaurantId);
       setItems(data);
     } catch {
-      setError('Failed to load menu items');
+      setError('Failed to load menu items. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -366,21 +336,24 @@ const MenuPage = () => {
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
-  // ── Filter ──
-  const filtered = items.filter(item => {
-    const matchSearch = item.name.toLowerCase().includes(search.toLowerCase()) ||
-      item.description?.toLowerCase().includes(search.toLowerCase());
+  // ✅ useMemo — filter sirf tab re-run hoga jab dependency change ho
+  const filtered = useMemo(() => items.filter(item => {
+    const matchSearch = item.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      item.description?.toLowerCase().includes(debouncedSearch.toLowerCase());
     const matchCat = filterCategory === 'ALL' || item.category === filterCategory;
     const matchVeg = filterVeg === 'ALL' ||
       (filterVeg === 'VEG' ? item.isVegetarian : !item.isVegetarian);
     return matchSearch && matchCat && matchVeg;
-  });
+  }), [items, debouncedSearch, filterCategory, filterVeg]); // ✅
 
-  // ── Categories used ──
-  const usedCategories = Array.from(new Set(items.map(i => i.category)));
+  // ✅ useMemo — categories list
+  const usedCategories = useMemo(
+    () => Array.from(new Set(items.map(i => i.category))),
+    [items]
+  );
 
-  // ── Add / Edit Save ──
-  const handleSave = async (data: MenuItemRequest) => {
+  // ✅ useCallback — handlers stable reference
+  const handleSave = useCallback(async (data: MenuItemRequest) => {
     try {
       if (editItem) {
         await menuApi.update(editItem.id, data);
@@ -395,10 +368,9 @@ const MenuPage = () => {
     } catch {
       toast.error('Failed to save item');
     }
-  };
+  }, [editItem, fetchItems]);
 
-  // ── Toggle availability ──
-  const handleToggle = async (item: MenuItem) => {
+  const handleToggle = useCallback(async (item: MenuItem) => {
     try {
       const updated = await menuApi.toggleAvailability(item.id);
       setItems(prev => prev.map(i => i.id === item.id ? updated : i));
@@ -406,10 +378,9 @@ const MenuPage = () => {
     } catch {
       toast.error('Failed to update availability');
     }
-  };
+  }, []);
 
-  // ── Delete ──
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!deleteItem) return;
     try {
       await menuApi.delete(deleteItem.id);
@@ -419,20 +390,22 @@ const MenuPage = () => {
     } catch {
       toast.error('Failed to delete item');
     }
-  };
+  }, [deleteItem, fetchItems]);
 
-  const openAdd = () => { setEditItem(null); setDialogOpen(true); };
-  const openEdit = (item: MenuItem) => { setEditItem(item); setDialogOpen(true); };
+  const openAdd = useCallback(() => { setEditItem(null); setDialogOpen(true); }, []);
+  const openEdit = useCallback((item: MenuItem) => { setEditItem(item); setDialogOpen(true); }, []);
 
-  // ── Stats ──
-  const available = items.filter(i => i.isAvailable).length;
-  const bestsellers = items.filter(i => i.isBestseller).length;
-  const vegItems = items.filter(i => i.isVegetarian).length;
+  // ✅ useMemo — stats
+  const { available, bestsellers, vegItems } = useMemo(() => ({
+    available: items.filter(i => i.isAvailable).length,
+    bestsellers: items.filter(i => i.isBestseller).length,
+    vegItems: items.filter(i => i.isVegetarian).length,
+  }), [items]);
 
   return (
     <Box>
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}
+        flexWrap="wrap" gap={2}>
         <Box>
           <Typography variant="h5" fontWeight={700}>Menu Management</Typography>
           <Typography variant="body2" color="text.secondary">
@@ -445,14 +418,20 @@ const MenuPage = () => {
         </Button>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}
+          action={
+            <Button color="error" size="small" onClick={fetchItems}>Retry</Button>
+          }>
+          {error}
+        </Alert>
+      )}
 
-      {/* Search & Filters */}
       <Box display="flex" gap={2} mb={3} flexWrap="wrap" alignItems="center">
         <TextField
           size="small" placeholder="Search items..."
           value={search} onChange={e => setSearch(e.target.value)}
-          sx={{ minWidth: 240, bgcolor: 'white', borderRadius: 2 }}
+          sx={{ minWidth: { xs: '100%', sm: 240 }, bgcolor: 'white', borderRadius: 2 }}
           InputProps={{ startAdornment: <InputAdornment position="start"><Search fontSize="small" /></InputAdornment> }}
         />
         <FormControl size="small" sx={{ minWidth: 160, bgcolor: 'white' }}>
@@ -475,7 +454,8 @@ const MenuPage = () => {
           </Select>
         </FormControl>
         {(filterCategory !== 'ALL' || filterVeg !== 'ALL' || search) && (
-          <Button size="small" onClick={() => { setSearch(''); setFilterCategory('ALL'); setFilterVeg('ALL'); }}>
+          <Button size="small"
+            onClick={() => { setSearch(''); setFilterCategory('ALL'); setFilterVeg('ALL'); }}>
             Clear Filters
           </Button>
         )}
@@ -484,7 +464,6 @@ const MenuPage = () => {
         </Typography>
       </Box>
 
-      {/* Grid */}
       {isLoading ? (
         <Grid container spacing={3}>
           {Array.from({ length: 8 }).map((_, i) => (
@@ -494,17 +473,17 @@ const MenuPage = () => {
           ))}
         </Grid>
       ) : filtered.length === 0 ? (
-        <Box textAlign="center" py={10}>
-          <Typography variant="h6" color="text.secondary" mb={1}>
-            {items.length === 0 ? 'No menu items yet' : 'No items match your filters'}
-          </Typography>
-          {items.length === 0 && (
-            <Button variant="contained" startIcon={<Add />} onClick={openAdd}
-              sx={{ mt: 2, borderRadius: 2, bgcolor: '#FF6B35', '&:hover': { bgcolor: '#e55a28' } }}>
-              Add Your First Item
-            </Button>
-          )}
-        </Box>
+        <EmptyState
+          type={search || filterCategory !== 'ALL' || filterVeg !== 'ALL' ? 'search' : 'menu'}
+          title={items.length === 0 ? 'No menu items yet' : 'No items match your filters'}
+          description={
+            items.length === 0
+              ? 'Start by adding your first menu item to the restaurant.'
+              : 'Try changing or clearing your search filters.'
+          }
+          actionLabel={items.length === 0 ? 'Add First Item' : undefined}
+          onAction={items.length === 0 ? openAdd : undefined}
+        />
       ) : (
         <Grid container spacing={3}>
           {filtered.map(item => (
@@ -520,7 +499,6 @@ const MenuPage = () => {
         </Grid>
       )}
 
-      {/* Dialogs */}
       <MenuItemDialog
         open={dialogOpen}
         onClose={() => { setDialogOpen(false); setEditItem(null); }}

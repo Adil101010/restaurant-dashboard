@@ -84,7 +84,7 @@ const TopItemsTable = ({ items, isLoading = false }: TopItemsTableProps) => {
               </TableHead>
               <TableBody>
                 {items.map((item, index) => {
-                  // ✅ Safe name — fallback to 'Unknown' if null/undefined
+                  //  Safe name — fallback to 'Unknown' if null/undefined
                   const itemName = item?.menuItemName ?? 'Unknown Item';
                   const itemInitial = itemName.charAt(0).toUpperCase();
 

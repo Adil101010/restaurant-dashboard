@@ -1,12 +1,12 @@
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
-  Box, Typography, Chip, Card, CardContent, Avatar,
+  Box, Typography, Chip, Avatar,
   Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, Paper, IconButton, Tooltip, Select, MenuItem,
-  FormControl, InputLabel, TextField, InputAdornment,
+  TableRow, Paper, IconButton, Tooltip,
+  TextField, InputAdornment,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, Divider, Skeleton, Alert, Pagination, Tabs, Tab,
-  Stack,
+  Button, Divider, Skeleton, Alert, Tabs, Tab,
+  Stack, CircularProgress,
 } from '@mui/material';
 import {
   Search, Visibility, Cancel, AccessTime,
@@ -19,8 +19,11 @@ import {
   orderApi, type OrderResponse, type OrderStatus,
 } from '../api/orderApi';
 import { formatCurrency } from '../utils/formatters';
+import EmptyState from '../components/common/EmptyState';
+import useDebounce from '../hooks/useDebounce';
 
-// ─── Status Config ─────────────────────────────────────────────
+const PAGE_SIZE = 20;
+
 const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   PENDING_PAYMENT: { label: 'Pending Payment', color: '#9C27B0', bg: '#F3E5F5', icon: <Pending sx={{ fontSize: 14 }} /> },
   PENDING:         { label: 'Pending',         color: '#FF9800', bg: '#FFF3E0', icon: <Pending sx={{ fontSize: 14 }} /> },
@@ -31,27 +34,25 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; bg: str
   CANCELLED:       { label: 'Cancelled',        color: '#f44336', bg: '#FFEBEE', icon: <Cancel sx={{ fontSize: 14 }} /> },
 };
 
-// Next allowed transitions for restaurant owner
 const NEXT_STATUSES: Partial<Record<OrderStatus, OrderStatus[]>> = {
-  PENDING:    ['CONFIRMED', 'CANCELLED'],
-  CONFIRMED:  ['PREPARING', 'CANCELLED'],
-  PREPARING:  ['OUT_FOR_DELIVERY'],
+  PENDING:          ['CONFIRMED', 'CANCELLED'],
+  CONFIRMED:        ['PREPARING', 'CANCELLED'],
+  PREPARING:        ['OUT_FOR_DELIVERY'],
   OUT_FOR_DELIVERY: ['DELIVERED'],
 };
 
-const StatusChip = ({ status }: { status: OrderStatus }) => {
+const StatusChip = React.memo(({ status }: { status: OrderStatus }) => {
   const cfg = STATUS_CONFIG[status];
   return (
     <Chip
       icon={<Box sx={{ color: `${cfg.color} !important`, display: 'flex' }}>{cfg.icon}</Box>}
-      label={cfg.label}
-      size="small"
+      label={cfg.label} size="small"
       sx={{ bgcolor: cfg.bg, color: cfg.color, fontWeight: 600, fontSize: 11 }}
     />
   );
-};
+});
 
-const PaymentChip = ({ status }: { status: string }) => {
+const PaymentChip = React.memo(({ status }: { status: string }) => {
   const map: Record<string, { color: string; bg: string }> = {
     PAID:     { color: '#4CAF50', bg: '#E8F5E9' },
     PENDING:  { color: '#FF9800', bg: '#FFF3E0' },
@@ -63,9 +64,8 @@ const PaymentChip = ({ status }: { status: string }) => {
     <Chip label={status} size="small"
       sx={{ bgcolor: cfg.bg, color: cfg.color, fontWeight: 600, fontSize: 10 }} />
   );
-};
+});
 
-// ─── Order Detail Dialog ───────────────────────────────────────
 const OrderDetailDialog = ({
   order, onClose, onStatusUpdate,
 }: {
@@ -101,37 +101,25 @@ const OrderDetailDialog = ({
       </DialogTitle>
 
       <DialogContent dividers>
-        {/* Customer Info */}
         <Box mb={2}>
-          <Typography variant="subtitle2" fontWeight={700} mb={1} color="text.secondary">
-            CUSTOMER
-          </Typography>
+          <Typography variant="subtitle2" fontWeight={700} mb={1} color="text.secondary">CUSTOMER</Typography>
           <Typography variant="body2" fontWeight={600}>{order.customerName}</Typography>
           <Typography variant="body2" color="text.secondary">{order.customerPhone}</Typography>
-          <Typography variant="body2" color="text.secondary" mt={0.5}>
-            📍 {order.deliveryAddress}
-          </Typography>
+          <Typography variant="body2" color="text.secondary" mt={0.5}>📍 {order.deliveryAddress}</Typography>
           {order.deliveryInstructions && (
-            <Typography variant="caption" color="text.secondary">
-              📝 {order.deliveryInstructions}
-            </Typography>
+            <Typography variant="caption" color="text.secondary">📝 {order.deliveryInstructions}</Typography>
           )}
         </Box>
 
         <Divider sx={{ mb: 2 }} />
 
-        {/* Order Items */}
-        <Typography variant="subtitle2" fontWeight={700} mb={1} color="text.secondary">
-          ORDER ITEMS
-        </Typography>
+        <Typography variant="subtitle2" fontWeight={700} mb={1} color="text.secondary">ORDER ITEMS</Typography>
         <Stack spacing={1} mb={2}>
           {order.items.map((item, i) => (
             <Box key={i} display="flex" justifyContent="space-between" alignItems="center">
               <Box display="flex" alignItems="center" gap={1}>
                 <Avatar src={item.imageUrl} variant="rounded"
-                  sx={{ width: 36, height: 36, bgcolor: '#FFF3EC' }}>
-                  🍽️
-                </Avatar>
+                  sx={{ width: 36, height: 36, bgcolor: '#FFF3EC' }}>🍽️</Avatar>
                 <Box>
                   <Typography variant="body2" fontWeight={600}>{item.menuItemName}</Typography>
                   <Typography variant="caption" color="text.secondary">
@@ -139,19 +127,14 @@ const OrderDetailDialog = ({
                   </Typography>
                 </Box>
               </Box>
-              <Typography variant="body2" fontWeight={700}>
-                {formatCurrency(item.totalPrice)}
-              </Typography>
+              <Typography variant="body2" fontWeight={700}>{formatCurrency(item.totalPrice)}</Typography>
             </Box>
           ))}
         </Stack>
 
         <Divider sx={{ mb: 2 }} />
 
-        {/* Bill Summary */}
-        <Typography variant="subtitle2" fontWeight={700} mb={1} color="text.secondary">
-          BILL SUMMARY
-        </Typography>
+        <Typography variant="subtitle2" fontWeight={700} mb={1} color="text.secondary">BILL SUMMARY</Typography>
         {[
           ['Subtotal', order.subtotal],
           ['Delivery Fee', order.deliveryFee],
@@ -160,8 +143,7 @@ const OrderDetailDialog = ({
         ].map(([label, val]) => (
           <Box key={label as string} display="flex" justifyContent="space-between" mb={0.5}>
             <Typography variant="body2" color="text.secondary">{label as string}</Typography>
-            <Typography variant="body2"
-              color={(val as number) < 0 ? 'success.main' : 'text.primary'}>
+            <Typography variant="body2" color={(val as number) < 0 ? 'success.main' : 'text.primary'}>
               {(val as number) < 0 ? '-' : ''}{formatCurrency(Math.abs(val as number))}
             </Typography>
           </Box>
@@ -174,18 +156,14 @@ const OrderDetailDialog = ({
           </Typography>
         </Box>
 
-        {/* Payment Info */}
-        <Box display="flex" gap={2} mt={2} p={1.5}
-          sx={{ bgcolor: '#F8F8F8', borderRadius: 2 }}>
+        <Box display="flex" gap={2} mt={2} p={1.5} sx={{ bgcolor: '#F8F8F8', borderRadius: 2 }}>
           <Box>
             <Typography variant="caption" color="text.secondary">Payment</Typography>
             <Box><PaymentChip status={order.paymentStatus} /></Box>
           </Box>
           <Box>
             <Typography variant="caption" color="text.secondary">Method</Typography>
-            <Typography variant="body2" fontWeight={600}>
-              {order.paymentMethod?.replace('_', ' ')}
-            </Typography>
+            <Typography variant="body2" fontWeight={600}>{order.paymentMethod?.replace('_', ' ')}</Typography>
           </Box>
           {order.estimatedDeliveryTime && (
             <Box>
@@ -200,8 +178,7 @@ const OrderDetailDialog = ({
         </Box>
       </DialogContent>
 
-      {/* Action Buttons */}
-      {next.length > 0 && (
+      {next.length > 0 ? (
         <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
           <Button onClick={onClose} variant="outlined" sx={{ borderRadius: 2 }}>Close</Button>
           {next.map(s => (
@@ -216,8 +193,7 @@ const OrderDetailDialog = ({
             </Button>
           ))}
         </DialogActions>
-      )}
-      {next.length === 0 && (
+      ) : (
         <DialogActions sx={{ px: 3, py: 2 }}>
           <Button onClick={onClose} variant="outlined" sx={{ borderRadius: 2 }}>Close</Button>
         </DialogActions>
@@ -226,46 +202,96 @@ const OrderDetailDialog = ({
   );
 };
 
-// ─── Tab value → OrderStatus filter ───────────────────────────
 const TAB_FILTERS: (OrderStatus | 'ALL')[] = [
   'ALL', 'PENDING', 'CONFIRMED', 'PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED',
 ];
 
-// ─── Main Page ─────────────────────────────────────────────────
 const OrdersPage = () => {
   const { user } = useAuth();
   const [orders, setOrders] = useState<OrderResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [tabIndex, setTabIndex] = useState(0);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [totalElements, setTotalElements] = useState(0);
   const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null);
 
-  const restaurantId = user?.restaurantId ?? 0;
-  const PAGE_SIZE = 10;
+  const scrollBoxRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const fetchOrders = useCallback(async (p = 1) => {
+  const restaurantId = user?.restaurantId ?? 0;
+  const debouncedSearch = useDebounce(search, 300);
+
+  const activeFilter = TAB_FILTERS[tabIndex];
+
+  
+  const isOnAllTab = activeFilter === 'ALL';
+
+  const fetchInitial = useCallback(async () => {
     if (!restaurantId) return;
     setIsLoading(true);
+    setHasMore(false);
+    setError('');
     try {
-      const data = await orderApi.getRestaurantOrders(restaurantId, p - 1, PAGE_SIZE);
+      const data = await orderApi.getRestaurantOrders(restaurantId, 0, PAGE_SIZE);
       setOrders(data.content);
-      setTotalPages(data.totalPages);
       setTotalElements(data.totalElements);
+      setCurrentPage(0);
+      setHasMore(!data.last);
     } catch {
-      setError('Failed to load orders');
+      setError('Failed to load orders. Please try again.');
     } finally {
       setIsLoading(false);
     }
   }, [restaurantId]);
 
-  useEffect(() => { fetchOrders(page); }, [fetchOrders, page]);
+  const fetchMore = useCallback(async () => {
+   
+    if (!restaurantId || isLoadingMore || !hasMore || !isOnAllTab) return;
+    setIsLoadingMore(true);
+    try {
+      const nextPage = currentPage + 1;
+      const data = await orderApi.getRestaurantOrders(restaurantId, nextPage, PAGE_SIZE);
+      setOrders(prev => [...prev, ...data.content]);
+      setCurrentPage(nextPage);
+      setHasMore(!data.last);
+    } catch {
+      toast.error('Failed to load more orders');
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [restaurantId, currentPage, hasMore, isLoadingMore, isOnAllTab]);
 
-  // ── Status Update ──
-  const handleStatusUpdate = async (orderId: number, status: OrderStatus) => {
+  useEffect(() => { fetchInitial(); }, [fetchInitial]);
+
+  
+  useEffect(() => {
+    if (!hasMore || isLoading || !isOnAllTab) return;
+
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isLoadingMore) {
+          fetchMore();
+        }
+      },
+      {
+        root: scrollBoxRef.current,
+        threshold: 0.1,
+        rootMargin: '100px',
+      }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [fetchMore, hasMore, isLoadingMore, isLoading, isOnAllTab]);
+
+  const handleStatusUpdate = useCallback(async (orderId: number, status: OrderStatus) => {
     try {
       const updated = await orderApi.updateStatus(orderId, status);
       setOrders(prev => prev.map(o => o.id === orderId ? updated : o));
@@ -273,194 +299,230 @@ const OrdersPage = () => {
     } catch {
       toast.error('Failed to update order status');
     }
-  };
+  }, []);
 
-  // ── Filters ──
-  const activeFilter = TAB_FILTERS[tabIndex];
-  const filtered = orders.filter(o => {
+  const filtered = useMemo(() => orders.filter(o => {
     const matchTab = activeFilter === 'ALL' || o.orderStatus === activeFilter;
-    const matchSearch = !search ||
-      String(o.id).includes(search) ||
-      o.customerName?.toLowerCase().includes(search.toLowerCase()) ||
-      o.customerPhone?.includes(search);
+    const matchSearch = !debouncedSearch ||
+      String(o.id).includes(debouncedSearch) ||
+      o.customerName?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      o.customerPhone?.includes(debouncedSearch);
     return matchTab && matchSearch;
-  });
+  }), [orders, activeFilter, debouncedSearch]);
 
-  // ── Tab counts ──
-  const tabCount = (filter: OrderStatus | 'ALL') =>
-    filter === 'ALL' ? orders.length : orders.filter(o => o.orderStatus === filter).length;
+  const tabCounts = useMemo(() =>
+    TAB_FILTERS.reduce((acc, f) => {
+      acc[f] = f === 'ALL' ? orders.length : orders.filter(o => o.orderStatus === f).length;
+      return acc;
+    }, {} as Record<string, number>),
+  [orders]);
 
   return (
-    <Box>
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box>
-          <Typography variant="h5" fontWeight={700}>Orders</Typography>
-          <Typography variant="body2" color="text.secondary">
-            {totalElements} total orders
-          </Typography>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+     
+      <Box sx={{ flexShrink: 0 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}
+          flexWrap="wrap" gap={2}>
+          <Box>
+            <Typography variant="h5" fontWeight={700}>Orders</Typography>
+            <Typography variant="body2" color="text.secondary">
+              {totalElements} 
+            </Typography>
+          </Box>
+          <Button variant="outlined" startIcon={<Receipt />} onClick={fetchInitial}
+            sx={{ borderRadius: 2 }}>
+            Refresh
+          </Button>
         </Box>
-        <Button variant="outlined" startIcon={<Receipt />} onClick={() => fetchOrders(page)}
-          sx={{ borderRadius: 2 }}>
-          Refresh
-        </Button>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}
+            action={<Button color="error" size="small" onClick={fetchInitial}>Retry</Button>}>
+            {error}
+          </Alert>
+        )}
+
+        <Tabs
+          value={tabIndex}
+          onChange={(_, v) => setTabIndex(v)}
+          variant="scrollable" scrollButtons="auto"
+          sx={{
+            mb: 2, bgcolor: 'white', borderRadius: 2, px: 1,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+            '& .MuiTab-root': { minHeight: 48, fontSize: 12, fontWeight: 600 },
+            '& .Mui-selected': { color: '#FF6B35 !important' },
+            '& .MuiTabs-indicator': { bgcolor: '#FF6B35' },
+          }}>
+          {TAB_FILTERS.map((f, i) => (
+            <Tab key={f} label={
+              <Box display="flex" alignItems="center" gap={0.5}>
+                {f === 'ALL' ? 'All' : STATUS_CONFIG[f].label}
+                {tabCounts[f] > 0 && (
+                  <Chip label={tabCounts[f]} size="small"
+                    sx={{
+                      height: 18, fontSize: 10,
+                      bgcolor: tabIndex === i ? '#FF6B35' : '#f0f0f0',
+                      color: tabIndex === i ? 'white' : 'text.secondary',
+                    }} />
+                )}
+              </Box>
+            } />
+          ))}
+        </Tabs>
+
+        <Box mb={2}>
+          <TextField size="small"
+            placeholder="Search by order ID, customer name, phone..."
+            value={search} onChange={e => setSearch(e.target.value)}
+            sx={{ width: { xs: '100%', sm: 360 }, bgcolor: 'white', borderRadius: 2 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start"><Search fontSize="small" /></InputAdornment>
+              ),
+            }} />
+        </Box>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
-
-      {/* Tabs */}
-      <Tabs
-        value={tabIndex}
-        onChange={(_, v) => { setTabIndex(v); setPage(1); }}
-        variant="scrollable" scrollButtons="auto"
-        sx={{ mb: 2, bgcolor: 'white', borderRadius: 2, px: 1,
-          boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-          '& .MuiTab-root': { minHeight: 48, fontSize: 12, fontWeight: 600 },
-          '& .Mui-selected': { color: '#FF6B35 !important' },
-          '& .MuiTabs-indicator': { bgcolor: '#FF6B35' },
-        }}>
-        {TAB_FILTERS.map((f, i) => (
-          <Tab key={f} label={
-            <Box display="flex" alignItems="center" gap={0.5}>
-              {f === 'ALL' ? 'All' : STATUS_CONFIG[f].label}
-              {tabCount(f) > 0 && (
-                <Chip label={tabCount(f)} size="small"
-                  sx={{ height: 18, fontSize: 10, bgcolor: tabIndex === i ? '#FF6B35' : '#f0f0f0',
-                    color: tabIndex === i ? 'white' : 'text.secondary' }} />
-              )}
-            </Box>
-          } />
-        ))}
-      </Tabs>
-
-      {/* Search */}
-      <Box mb={2}>
-        <TextField size="small" placeholder="Search by order ID, customer name, phone..."
-          value={search} onChange={e => setSearch(e.target.value)}
-          sx={{ width: 360, bgcolor: 'white', borderRadius: 2 }}
-          InputProps={{ startAdornment: <InputAdornment position="start"><Search fontSize="small" /></InputAdornment> }} />
-      </Box>
-
-      {/* Table */}
-      <TableContainer component={Paper}
-        sx={{ borderRadius: 3, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-        <Table>
-          <TableHead>
-            <TableRow sx={{ bgcolor: '#FAFAFA' }}>
-              {['Order ID', 'Customer', 'Items', 'Amount', 'Payment', 'Status', 'Time', 'Action']
-                .map(h => (
-                  <TableCell key={h} sx={{ fontWeight: 700, fontSize: 12, color: 'text.secondary' }}>
-                    {h}
-                  </TableCell>
-                ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: 6 }).map((_, i) => (
-                <TableRow key={i}>
-                  {Array.from({ length: 8 }).map((_, j) => (
-                    <TableCell key={j}><Skeleton height={24} /></TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : filtered.length === 0 ? (
+     
+      <Box ref={scrollBoxRef} sx={{ flexGrow: 1, overflow: 'auto', minHeight: 0 }}>
+        <TableContainer component={Paper}
+          sx={{ borderRadius: 3, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+          <Table stickyHeader>
+            <TableHead>
               <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
-                  <Typography color="text.secondary">No orders found</Typography>
-                </TableCell>
+                {['Order ID', 'Customer', 'Items', 'Amount', 'Payment', 'Status', 'Time', 'Action']
+                  .map(h => (
+                    <TableCell key={h}
+                      sx={{ fontWeight: 700, fontSize: 12, color: 'text.secondary', bgcolor: '#FAFAFA' }}>
+                      {h}
+                    </TableCell>
+                  ))}
               </TableRow>
-            ) : (
-              filtered.map(order => (
-                <TableRow key={order.id} hover
-                  sx={{ '&:hover': { bgcolor: '#FFF9F6' }, cursor: 'pointer' }}
-                  onClick={() => setSelectedOrder(order)}>
-                  {/* ID */}
-                  <TableCell>
-                    <Typography variant="body2" fontWeight={700} color="primary.main">
-                      #{order.id}
-                    </Typography>
-                  </TableCell>
-                  {/* Customer */}
-                  <TableCell>
-                    <Typography variant="body2" fontWeight={600}>{order.customerName}</Typography>
-                    <Typography variant="caption" color="text.secondary">{order.customerPhone}</Typography>
-                  </TableCell>
-                  {/* Items */}
-                  <TableCell>
-                    <Typography variant="body2">
-                      {order.items?.length ?? 0} item{(order.items?.length ?? 0) !== 1 ? 's' : ''}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" noWrap
-                      sx={{ maxWidth: 140, display: 'block' }}>
-                      {order.items?.slice(0, 2).map(i => i.menuItemName).join(', ')}
-                      {(order.items?.length ?? 0) > 2 ? '...' : ''}
-                    </Typography>
-                  </TableCell>
-                  {/* Amount */}
-                  <TableCell>
-                    <Typography variant="body2" fontWeight={700}>
-                      {formatCurrency(order.totalAmount)}
-                    </Typography>
-                  </TableCell>
-                  {/* Payment */}
-                  <TableCell><PaymentChip status={order.paymentStatus} /></TableCell>
-                  {/* Status */}
-                  <TableCell><StatusChip status={order.orderStatus} /></TableCell>
-                  {/* Time */}
-                  <TableCell>
-                    <Box display="flex" alignItems="center" gap={0.5}>
-                      <AccessTime sx={{ fontSize: 13, color: 'text.secondary' }} />
-                      <Typography variant="caption" color="text.secondary">
-                        {new Date(order.createdAt).toLocaleTimeString('en-IN', {
-                          hour: '2-digit', minute: '2-digit',
-                        })}
-                      </Typography>
-                    </Box>
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      {new Date(order.createdAt).toLocaleDateString('en-IN')}
-                    </Typography>
-                  </TableCell>
-                  {/* Action */}
-                  <TableCell onClick={e => e.stopPropagation()}>
-                    <Box display="flex" gap={0.5}>
-                      <Tooltip title="View Details">
-                        <IconButton size="small" onClick={() => setSelectedOrder(order)}
-                          sx={{ bgcolor: '#F5F5F5', '&:hover': { bgcolor: '#E3F2FD' } }}>
-                          <Visibility fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      {NEXT_STATUSES[order.orderStatus]?.includes('CANCELLED') && (
-                        <Tooltip title="Cancel Order">
-                          <IconButton size="small"
-                            onClick={async () => {
-                              await handleStatusUpdate(order.id, 'CANCELLED');
-                            }}
-                            sx={{ bgcolor: '#F5F5F5', '&:hover': { bgcolor: '#FFEBEE' } }}>
-                            <Cancel fontSize="small" color="error" />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                    </Box>
+            </TableHead>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {Array.from({ length: 8 }).map((_, j) => (
+                      <TableCell key={j}><Skeleton height={24} /></TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} sx={{ border: 0 }}>
+                    <EmptyState
+                      type={debouncedSearch ? 'search' : 'orders'}
+                      description={
+                        debouncedSearch
+                          ? `No orders found for "${debouncedSearch}"`
+                          : activeFilter !== 'ALL'
+                          ? `No ${STATUS_CONFIG[activeFilter as OrderStatus]?.label} orders`
+                          : undefined
+                      }
+                    />
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+              ) : (
+                <>
+                  {filtered.map(order => (
+                    <TableRow key={order.id} hover
+                      sx={{ '&:hover': { bgcolor: '#FFF9F6' }, cursor: 'pointer' }}
+                      onClick={() => setSelectedOrder(order)}>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={700} color="primary.main">
+                          #{order.id}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={600}>{order.customerName}</Typography>
+                        <Typography variant="caption" color="text.secondary">{order.customerPhone}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {order.items?.length ?? 0} item{(order.items?.length ?? 0) !== 1 ? 's' : ''}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" noWrap
+                          sx={{ maxWidth: 140, display: 'block' }}>
+                          {order.items?.slice(0, 2).map(i => i.menuItemName).join(', ')}
+                          {(order.items?.length ?? 0) > 2 ? '...' : ''}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={700}>
+                          {formatCurrency(order.totalAmount)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell><PaymentChip status={order.paymentStatus} /></TableCell>
+                      <TableCell><StatusChip status={order.orderStatus} /></TableCell>
+                      <TableCell>
+                        <Box display="flex" alignItems="center" gap={0.5}>
+                          <AccessTime sx={{ fontSize: 13, color: 'text.secondary' }} />
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(order.createdAt).toLocaleTimeString('en-IN', {
+                              hour: '2-digit', minute: '2-digit',
+                            })}
+                          </Typography>
+                        </Box>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          {new Date(order.createdAt).toLocaleDateString('en-IN')}
+                        </Typography>
+                      </TableCell>
+                      <TableCell onClick={e => e.stopPropagation()}>
+                        <Box display="flex" gap={0.5}>
+                          <Tooltip title="View Details">
+                            <IconButton size="small" onClick={() => setSelectedOrder(order)}
+                              sx={{ bgcolor: '#F5F5F5', '&:hover': { bgcolor: '#E3F2FD' } }}>
+                              <Visibility fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          {NEXT_STATUSES[order.orderStatus]?.includes('CANCELLED') && (
+                            <Tooltip title="Cancel Order">
+                              <IconButton size="small"
+                                onClick={async () => handleStatusUpdate(order.id, 'CANCELLED')}
+                                sx={{ bgcolor: '#F5F5F5', '&:hover': { bgcolor: '#FFEBEE' } }}>
+                                <Cancel fontSize="small" color="error" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <Box display="flex" justifyContent="center" mt={3}>
-          <Pagination count={totalPages} page={page}
-            onChange={(_, v) => setPage(v)}
-            color="primary"
-            sx={{ '& .MuiPaginationItem-root.Mui-selected': { bgcolor: '#FF6B35', color: 'white' } }} />
-        </Box>
-      )}
+                
+                  {hasMore && isOnAllTab && (
+                    <TableRow>
+                      <TableCell colSpan={8} sx={{ border: 0, p: 0 }}>
+                        <div ref={sentinelRef} style={{ height: 20 }} />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
 
-      {/* Detail Dialog */}
+      
+        {isLoadingMore && isOnAllTab && (
+          <Box display="flex" justifyContent="center" alignItems="center" py={2} gap={1}>
+            <CircularProgress size={18} sx={{ color: '#FF6B35' }} />
+            <Typography variant="caption" color="text.secondary">Loading more orders...</Typography>
+          </Box>
+        )}
+
+        
+        {!hasMore && orders.length > 0 && !isLoading && isOnAllTab && (
+          <Box textAlign="center" py={2}>
+            <Typography variant="caption" color="text.secondary">
+              {totalElements} orders loaded
+            </Typography>
+          </Box>
+        )}
+      </Box>
+
       <OrderDetailDialog
         order={selectedOrder}
         onClose={() => setSelectedOrder(null)}

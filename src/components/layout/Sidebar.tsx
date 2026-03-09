@@ -21,12 +21,14 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 
+
 interface SidebarProps {
   drawerWidth: number;
   mobileOpen: boolean;
   onClose: () => void;
   isMobile: boolean;
 }
+
 
 const navItems = [
   { label: 'Dashboard', path: '/', icon: <Dashboard /> },
@@ -36,10 +38,13 @@ const navItems = [
   { label: 'Settings', path: '/settings', icon: <Settings /> },
 ];
 
-const DrawerContent = () => {
+
+//  onClose aur isMobile props add kiye
+const DrawerContent = ({ onClose, isMobile }: { onClose?: () => void; isMobile?: boolean }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -94,7 +99,10 @@ const DrawerContent = () => {
           return (
             <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
               <ListItemButton
-                onClick={() => navigate(item.path)}
+                onClick={() => {
+                  navigate(item.path);
+                  if (isMobile && onClose) onClose(); //  Mobile pe drawer auto-close
+                }}
                 sx={{
                   borderRadius: 2,
                   px: 2,
@@ -138,6 +146,7 @@ const DrawerContent = () => {
   );
 };
 
+
 const Sidebar = ({ drawerWidth, mobileOpen, onClose, isMobile }: SidebarProps) => {
   return (
     <Box
@@ -158,7 +167,7 @@ const Sidebar = ({ drawerWidth, mobileOpen, onClose, isMobile }: SidebarProps) =
             },
           }}
         >
-          <DrawerContent />
+          <DrawerContent onClose={onClose} isMobile={isMobile} /> {/*  Props pass */}
         </Drawer>
       ) : (
         /* Desktop Drawer */
@@ -174,11 +183,12 @@ const Sidebar = ({ drawerWidth, mobileOpen, onClose, isMobile }: SidebarProps) =
           }}
           open
         >
-          <DrawerContent />
+          <DrawerContent /> {/* Desktop pe onClose ki zaroorat nahi */}
         </Drawer>
       )}
     </Box>
   );
 };
+
 
 export default Sidebar;

@@ -1,73 +1,52 @@
-# React + TypeScript + Vite
+# 🍕 Restaurant Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Web portal for restaurant owners to manage orders, menu, and analytics in real-time.
 
-Currently, two official plugins are available:
+Built with React 18 + TypeScript + Material-UI, connected to a Spring Boot microservices backend.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Tech Stack
 
-## React Compiler
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18 + TypeScript |
+| UI Library | Material-UI (MUI) 5 |
+| Routing | React Router 6 |
+| HTTP Client | Axios |
+| Charts | Recharts |
+| Real-Time | WebSocket / Socket.IO |
+| Build Tool | Vite 5 |
+| Backend | Spring Boot 3.2 (18+ microservices) |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Features
 
-## Expanding the ESLint configuration
+-  JWT Authentication with auto token refresh
+-  Real-time order notifications (WebSocket + Audio)
+-  Menu management (CRUD + image upload)
+-  Order lifecycle (Pending → Preparing → Delivered)
+-  Analytics dashboard with revenue charts
+-  Mobile responsive design
+-  Offline detection banner
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Prerequisites
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- Node.js 18+
+- npm 9+
+- Backend running (Spring Boot)
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Setup
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+```bash
+# 1. Clone karo
+git clone https://github.com/Adil101010/restaurant-dashboard.git
+cd restaurant-dashboard
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+# 2. Dependencies install karo
+npm install
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+# 3. Environment variables
+cp .env.example .env.local
+# .env.local mein apna backend URL daalo
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+# 4. Dev server start karo
+npm run dev
+# App runs at: http://localhost:5173

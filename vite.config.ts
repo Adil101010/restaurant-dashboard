@@ -11,4 +11,18 @@ export default defineConfig({
       '@': '/src',
     },
   },
+  // Production build optimization
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          mui: ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
+          charts: ['recharts'],
+          utils: ['axios', 'date-fns', 'react-hot-toast'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
+  },
 })
