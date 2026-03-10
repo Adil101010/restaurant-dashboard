@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { LocalOffer } from '@mui/icons-material';
 import {
   Box,
   Drawer,
@@ -34,12 +35,15 @@ const navItems = [
   { label: 'Dashboard', path: '/', icon: <Dashboard /> },
   { label: 'Menu', path: '/menu', icon: <RestaurantMenu /> },
   { label: 'Orders', path: '/orders', icon: <ShoppingBag /> },
+   { path: '/promotions', label: 'Promo', icon: <LocalOffer /> },
   { label: 'Profile', path: '/profile', icon: <Store /> },
+   
   { label: 'Settings', path: '/settings', icon: <Settings /> },
+
 ];
 
 
-//  onClose aur isMobile props add kiye
+
 const DrawerContent = ({ onClose, isMobile }: { onClose?: () => void; isMobile?: boolean }) => {
   const navigate = useNavigate();
   const location = useLocation();

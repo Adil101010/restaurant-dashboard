@@ -53,15 +53,11 @@ const CustomTooltip = ({ active, payload, label }: {
 };
 
 const RevenueChart = ({ data, isLoading = false }: RevenueChartProps) => {
- const chartData = (Array.isArray(data) ? data : []).map((item) => ({
-    date: new Date(item.date).toLocaleDateString('en-IN', {
-      month: 'short',
-      day: 'numeric',
-    }),
-    revenue: item.revenue,
-    orders: item.orders,
-  }));
-
+const chartData = (Array.isArray(data) ? data : []).map((item) => ({
+  date: item.date,  
+  revenue: item.revenue,
+  orders: item.orders,
+}));
   return (
     <Card sx={{ borderRadius: 3, height: '100%' }}>
       <CardContent sx={{ p: 3 }}>

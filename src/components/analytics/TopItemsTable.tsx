@@ -18,12 +18,10 @@ import { TrendingUp } from '@mui/icons-material';
 import type { TopItem } from '../../api/analyticsApi';
 import { formatCurrency } from '../../utils/formatters';
 
-
 interface TopItemsTableProps {
   items: TopItem[];
   isLoading?: boolean;
 }
-
 
 const TopItemsTable = ({ items, isLoading = false }: TopItemsTableProps) => {
   return (
@@ -41,7 +39,6 @@ const TopItemsTable = ({ items, isLoading = false }: TopItemsTableProps) => {
             </Typography>
           </Box>
         </Box>
-
 
         {isLoading ? (
           [...Array(5)].map((_, i) => (
@@ -84,13 +81,13 @@ const TopItemsTable = ({ items, isLoading = false }: TopItemsTableProps) => {
               </TableHead>
               <TableBody>
                 {items.map((item, index) => {
-                  //  Safe name — fallback to 'Unknown' if null/undefined
-                  const itemName = item?.menuItemName ?? 'Unknown Item';
+               
+                  const itemName = item?.name ?? 'Unknown Item';
                   const itemInitial = itemName.charAt(0).toUpperCase();
 
                   return (
                     <TableRow
-                      key={item.menuItemId ?? index}
+                      key={index}  
                       sx={{
                         '&:last-child td': { border: 0 },
                         '&:hover': { bgcolor: 'rgba(255,107,53,0.04)' },
@@ -123,7 +120,6 @@ const TopItemsTable = ({ items, isLoading = false }: TopItemsTableProps) => {
                       <TableCell sx={{ border: 0 }}>
                         <Box display="flex" alignItems="center" gap={1.5}>
                           <Avatar
-                            src={item?.imageUrl}
                             sx={{ width: 36, height: 36, bgcolor: 'primary.light' }}
                           >
                             {itemInitial}
@@ -154,6 +150,5 @@ const TopItemsTable = ({ items, isLoading = false }: TopItemsTableProps) => {
     </Card>
   );
 };
-
 
 export default TopItemsTable;

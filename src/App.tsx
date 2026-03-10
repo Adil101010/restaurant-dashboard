@@ -7,6 +7,7 @@ import Layout from './components/layout/Layout';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import OfflineBanner from './components/common/OfflineBanner';
 import { CircularProgress, Box } from '@mui/material';
+const PromotionsPage = lazy(() => import('./pages/PromotionsPage'));
 
 //  Lazy load — har page alag chunk banega
 const LoginPage     = lazy(() => import('./pages/LoginPage'));
@@ -15,6 +16,7 @@ const MenuPage      = lazy(() => import('./pages/MenuPage'));
 const OrdersPage    = lazy(() => import('./pages/OrdersPage'));
 const ProfilePage   = lazy(() => import('./pages/ProfilePage'));
 const SettingsPage  = lazy(() => import('./pages/SettingsPage'));
+
 
 //  Page load hone tak fallback
 const PageLoader = () => (
@@ -48,6 +50,8 @@ function App() {
                   <Route path="/orders"  element={<OrdersPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/promotions" element={<PromotionsPage />} />
+
                 </Route>
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
