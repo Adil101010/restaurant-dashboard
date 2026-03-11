@@ -6,19 +6,27 @@ import {
   Alert,
 } from '@mui/material';
 import {
-  Add, LocalOffer, Block, ContentCopy, CheckCircle,
+  Add, LocalOffer, Block, ContentCopy, CheckCircle, Edit,
 } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import { promotionsApi, type Coupon, type CreateCouponRequest } from '../api/promotionsApi';
+import {
+  promotionsApi,
+  type Coupon,
+  type CreateCouponRequest,
+  type UpdateCouponRequest,
+} from '../api/promotionsApi';
 import { formatCurrency } from '../utils/formatters';
+
 
 const PromotionsPage = () => {
   const { user } = useAuth();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm<CreateCouponRequest>({
@@ -30,6 +38,13 @@ const PromotionsPage = () => {
       maxUsagePerUser: 1,
     },
   });
+
+  const {
+    control: editControl,
+    handleSubmit: handleEditSubmit,
+    reset: editReset,
+    setValue,
+  } = useForm<UpdateCouponRequest>();
 
   const fetchCoupons = useCallback(async () => {
     if (!user?.restaurantId) return;
@@ -60,8 +75,35 @@ const PromotionsPage = () => {
       setDialogOpen(false);
       reset();
       fetchCoupons();
-    } catch {
-      toast.error('Failed to create coupon');
+    } catch (error: any) {
+      const message = error?.response?.data?.message || 'Failed to create coupon';
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditOpen = (coupon: Coupon) => {
+    setSelectedCoupon(coupon);
+    setValue('description', coupon.description);
+    setValue('validUntil', coupon.validUntil.slice(0, 16));
+    setValue('maxUsageCount', coupon.maxUsageCount);
+    setValue('minOrderAmount', coupon.minOrderAmount);
+    setEditDialogOpen(true);
+  };
+
+  const handleEditSave = async (data: UpdateCouponRequest) => {
+    if (!selectedCoupon) return;
+    setIsSubmitting(true);
+    try {
+      await promotionsApi.updateCoupon(selectedCoupon.id, data);
+      toast.success(`Coupon ${selectedCoupon.code} updated!`);
+      setEditDialogOpen(false);
+      editReset();
+      fetchCoupons();
+    } catch (error: any) {
+      const message = error?.response?.data?.message || 'Failed to update coupon';
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -94,7 +136,7 @@ const PromotionsPage = () => {
   const getDiscountLabel = (coupon: Coupon) => {
     switch (coupon.discountType) {
       case 'PERCENTAGE': return `${coupon.discountValue}% OFF`;
-      case 'FLAT_DISCOUNT': return `₹${coupon.discountValue} OFF`;
+      case 'FLAT_DISCOUNT': return `${coupon.discountValue} OFF`;
       case 'FREE_DELIVERY': return 'FREE DELIVERY';
       default: return '';
     }
@@ -178,11 +220,7 @@ const PromotionsPage = () => {
                       <Typography
                         variant="h6"
                         fontWeight={800}
-                        sx={{
-                          fontFamily: 'monospace',
-                          color: 'primary.main',
-                          letterSpacing: 1,
-                        }}
+                        sx={{ fontFamily: 'monospace', color: 'primary.main', letterSpacing: 1 }}
                       >
                         {coupon.code}
                       </Typography>
@@ -191,6 +229,17 @@ const PromotionsPage = () => {
                           <ContentCopy sx={{ fontSize: 14 }} />
                         </IconButton>
                       </Tooltip>
+                      {coupon.status === 'ACTIVE' && (
+                        <Tooltip title="Edit coupon">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleEditOpen(coupon)}
+                            sx={{ color: 'primary.main' }}
+                          >
+                            <Edit sx={{ fontSize: 14 }} />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                     </Box>
                     <Chip
                       label={coupon.status}
@@ -205,8 +254,7 @@ const PromotionsPage = () => {
                     sx={{
                       bgcolor: 'rgba(255,107,53,0.1)',
                       borderRadius: 2,
-                      px: 2, py: 1,
-                      mb: 1.5,
+                      px: 2, py: 1, mb: 1.5,
                       display: 'inline-block',
                     }}
                   >
@@ -226,7 +274,7 @@ const PromotionsPage = () => {
                       {coupon.maxDiscountAmount && ` • Max discount: ${formatCurrency(coupon.maxDiscountAmount)}`}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Valid: {new Date(coupon.validFrom).toLocaleDateString('en-IN')} →{' '}
+                      Valid: {new Date(coupon.validFrom).toLocaleDateString('en-IN')} -{' '}
                       {new Date(coupon.validUntil).toLocaleDateString('en-IN')}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
@@ -234,7 +282,7 @@ const PromotionsPage = () => {
                     </Typography>
                   </Box>
 
-                  {/* Action */}
+                  {/* Actions */}
                   {coupon.status === 'ACTIVE' && (
                     <Button
                       fullWidth
@@ -263,15 +311,10 @@ const PromotionsPage = () => {
         fullWidth
         PaperProps={{ sx: { borderRadius: 3 } }}
       >
-        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
-          Create New Coupon
-        </DialogTitle>
-
+        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Create New Coupon</DialogTitle>
         <form onSubmit={handleSubmit(handleCreate)}>
           <DialogContent sx={{ pt: 1 }}>
             <Grid container spacing={2}>
-
-              {/* Code */}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name="code"
@@ -290,8 +333,6 @@ const PromotionsPage = () => {
                   )}
                 />
               </Grid>
-
-              {/* Discount Type */}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name="discountType"
@@ -299,14 +340,12 @@ const PromotionsPage = () => {
                   render={({ field }) => (
                     <TextField {...field} select label="Discount Type *" fullWidth>
                       <MenuItem value="PERCENTAGE">Percentage (%)</MenuItem>
-                      <MenuItem value="FLAT_DISCOUNT">Flat Discount (₹)</MenuItem>
+                      <MenuItem value="FLAT_DISCOUNT">Flat Discount (Rs)</MenuItem>
                       <MenuItem value="FREE_DELIVERY">Free Delivery</MenuItem>
                     </TextField>
                   )}
                 />
               </Grid>
-
-              {/* Description */}
               <Grid size={{ xs: 12 }}>
                 <Controller
                   name="description"
@@ -324,8 +363,6 @@ const PromotionsPage = () => {
                   )}
                 />
               </Grid>
-
-              {/* Discount Value */}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name="discountValue"
@@ -343,8 +380,6 @@ const PromotionsPage = () => {
                   )}
                 />
               </Grid>
-
-              {/* Max Discount */}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name="maxDiscountAmount"
@@ -353,15 +388,13 @@ const PromotionsPage = () => {
                     <TextField
                       {...field}
                       type="number"
-                      label="Max Discount Amount (₹)"
+                      label="Max Discount Amount (Rs)"
                       fullWidth
                       helperText="Optional cap for % discounts"
                     />
                   )}
                 />
               </Grid>
-
-              {/* Min Order */}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name="minOrderAmount"
@@ -371,7 +404,7 @@ const PromotionsPage = () => {
                     <TextField
                       {...field}
                       type="number"
-                      label="Min Order Amount (₹) *"
+                      label="Min Order Amount (Rs) *"
                       fullWidth
                       error={!!errors.minOrderAmount}
                       helperText={errors.minOrderAmount?.message}
@@ -379,8 +412,6 @@ const PromotionsPage = () => {
                   )}
                 />
               </Grid>
-
-              {/* Applicable For */}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name="applicableFor"
@@ -394,8 +425,6 @@ const PromotionsPage = () => {
                   )}
                 />
               </Grid>
-
-              {/* Valid From */}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name="validFrom"
@@ -414,8 +443,6 @@ const PromotionsPage = () => {
                   )}
                 />
               </Grid>
-
-              {/* Valid Until */}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name="validUntil"
@@ -434,8 +461,6 @@ const PromotionsPage = () => {
                   )}
                 />
               </Grid>
-
-              {/* Max Usage */}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name="maxUsageCount"
@@ -453,8 +478,6 @@ const PromotionsPage = () => {
                   )}
                 />
               </Grid>
-
-              {/* Max Per User */}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name="maxUsagePerUser"
@@ -472,14 +495,11 @@ const PromotionsPage = () => {
                   )}
                 />
               </Grid>
-
             </Grid>
-
             <Alert severity="info" sx={{ mt: 2, borderRadius: 2 }}>
               Coupon will be linked to your restaurant automatically.
             </Alert>
           </DialogContent>
-
           <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
             <Button
               onClick={() => { setDialogOpen(false); reset(); }}
@@ -495,6 +515,107 @@ const PromotionsPage = () => {
               sx={{ borderRadius: 2, px: 3 }}
             >
               {isSubmitting ? 'Creating...' : 'Create Coupon'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      {/* Edit Coupon Dialog */}
+      <Dialog
+        open={editDialogOpen}
+        onClose={() => { setEditDialogOpen(false); editReset(); }}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
+          Edit Coupon — {selectedCoupon?.code}
+        </DialogTitle>
+        <form onSubmit={handleEditSubmit(handleEditSave)}>
+          <DialogContent sx={{ pt: 1 }}>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12 }}>
+                <Controller
+                  name="description"
+                  control={editControl}
+                  rules={{ required: 'Description required' }}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Description *"
+                      fullWidth
+                      multiline
+                      rows={2}
+                    />
+                  )}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Controller
+                  name="validUntil"
+                  control={editControl}
+                  rules={{ required: 'Required' }}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      type="datetime-local"
+                      label="Valid Until *"
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  )}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Controller
+                  name="maxUsageCount"
+                  control={editControl}
+                  rules={{ required: 'Required', min: { value: 1, message: 'Min 1' } }}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      type="number"
+                      label="Total Usage Limit *"
+                      fullWidth
+                    />
+                  )}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Controller
+                  name="minOrderAmount"
+                  control={editControl}
+                  rules={{ required: 'Required' }}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      type="number"
+                      label="Min Order Amount (Rs) *"
+                      fullWidth
+                    />
+                  )}
+                />
+              </Grid>
+            </Grid>
+            <Alert severity="info" sx={{ mt: 2, borderRadius: 2 }}>
+             Code and discount value cannot be changed.
+            </Alert>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+            <Button
+              onClick={() => { setEditDialogOpen(false); editReset(); }}
+              variant="outlined"
+              sx={{ borderRadius: 2 }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={isSubmitting}
+              sx={{ borderRadius: 2, px: 3 }}
+            >
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
             </Button>
           </DialogActions>
         </form>

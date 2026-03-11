@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react'; // ✅ React + useMemo add
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Box, Grid, Typography, Button, TextField, InputAdornment,
   Card, CardContent, CardMedia, Chip, IconButton, Switch,
   Dialog, DialogTitle, DialogContent, DialogActions,
   FormControl, InputLabel, Select, MenuItem as MuiMenuItem,
-  FormControlLabel, Checkbox, Skeleton, Alert, Tooltip,
+  FormControlLabel, Checkbox, Skeleton, Alert, Tooltip, Divider,
 } from '@mui/material';
 import {
   Add, Search, Edit, Delete, FilterList,
@@ -21,6 +21,7 @@ import EmptyState from '../components/common/EmptyState';
 import useDebounce from '../hooks/useDebounce';
 
 
+// ─── emptyForm ─────────────────────────────────────────────────
 const emptyForm = (): MenuItemRequest => ({
   restaurantId: 0,
   name: '',
@@ -38,10 +39,13 @@ const emptyForm = (): MenuItemRequest => ({
   isBestseller: false,
   isSpicy: false,
   spiceLevel: 0,
+  isOnOffer: false,      // ✅
+  discountPercent: 0,
+  offerLabel: '',
 });
 
 
-// ✅ React.memo — unnecessary re-renders rokta hai
+// ─── MenuItemCard ───────────────────────────────────────────────
 const MenuItemCard = React.memo(({
   item, onEdit, onDelete, onToggle,
 }: {
@@ -49,95 +53,141 @@ const MenuItemCard = React.memo(({
   onEdit: (item: MenuItem) => void;
   onDelete: (item: MenuItem) => void;
   onToggle: (item: MenuItem) => void;
-}) => (
-  <Card sx={{
-    borderRadius: 3,
-    boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-    transition: 'transform 0.2s',
-    opacity: item.isAvailable ? 1 : 0.65,
-    '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 6px 20px rgba(0,0,0,0.12)' },
-  }}>
-    <Box sx={{ position: 'relative' }}>
-      <CardMedia
-        component="img" height={160}
-        image={item.imageUrl || 'https://via.placeholder.com/300x160?text=No+Image'}
-        alt={item.name}
-        loading="lazy" // ✅ Image lazy loading
-        sx={{ objectFit: 'cover' }}
-      />
-      <Box sx={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-        {item.isBestseller && (
-          <Chip label="Bestseller" size="small" icon={<Star sx={{ fontSize: 12 }} />}
-            sx={{ bgcolor: '#FF6B35', color: 'white', fontWeight: 700, fontSize: 10 }} />
-        )}
-        {item.isVegetarian && (
-          <Chip label="Veg" size="small" icon={<EmojiNature sx={{ fontSize: 12 }} />}
-            sx={{ bgcolor: '#4CAF50', color: 'white', fontWeight: 700, fontSize: 10 }} />
-        )}
-        {item.isSpicy && (
-          <Chip label="Spicy" size="small" icon={<LocalFireDepartment sx={{ fontSize: 12 }} />}
-            sx={{ bgcolor: '#f44336', color: 'white', fontWeight: 700, fontSize: 10 }} />
-        )}
-      </Box>
-      <Box sx={{ position: 'absolute', top: 6, right: 6, bgcolor: 'rgba(255,255,255,0.9)', borderRadius: 2, px: 0.5 }}>
-        <Switch size="small" checked={item.isAvailable ?? true}
-          onChange={() => onToggle(item)} color="success" />
-      </Box>
-    </Box>
+}) => {
+  const finalPrice = item.isOnOffer && item.discountPercent > 0   // ✅
+    ? (item.discountedPrice > 0
+        ? item.discountedPrice
+        : item.price - (item.price * item.discountPercent) / 100)
+    : null;
 
-    <CardContent sx={{ p: 2 }}>
-      <Chip label={CATEGORY_LABELS[item.category]} size="small"
-        sx={{ bgcolor: '#FFF3EC', color: '#FF6B35', fontWeight: 600, fontSize: 10, mb: 1 }} />
-      <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={0.5}>
-        <Typography variant="subtitle1" fontWeight={700} sx={{ flex: 1, pr: 1, lineHeight: 1.3 }}>
-          {item.name}
-        </Typography>
-        <Typography variant="subtitle1" fontWeight={800} color="primary.main">
-          {formatCurrency(item.price)}
-        </Typography>
+  return (
+    <Card sx={{
+      borderRadius: 3,
+      boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+      transition: 'transform 0.2s',
+      opacity: item.isAvailable ? 1 : 0.65,
+      '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 6px 20px rgba(0,0,0,0.12)' },
+    }}>
+      <Box sx={{ position: 'relative' }}>
+        <CardMedia
+          component="img" height={160}
+          image={item.imageUrl || 'https://via.placeholder.com/300x160?text=No+Image'}
+          alt={item.name}
+          loading="lazy"
+          sx={{ objectFit: 'cover' }}
+        />
+
+        {/* ── Badges: top-left ── */}
+        <Box sx={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+          {item.isBestseller && (
+            <Chip label="Bestseller" size="small" icon={<Star sx={{ fontSize: 12 }} />}
+              sx={{ bgcolor: '#FF6B35', color: 'white', fontWeight: 700, fontSize: 10 }} />
+          )}
+          {item.isVegetarian && (
+            <Chip label="Veg" size="small" icon={<EmojiNature sx={{ fontSize: 12 }} />}
+              sx={{ bgcolor: '#4CAF50', color: 'white', fontWeight: 700, fontSize: 10 }} />
+          )}
+          {item.isSpicy && (
+            <Chip label="Spicy" size="small" icon={<LocalFireDepartment sx={{ fontSize: 12 }} />}
+              sx={{ bgcolor: '#f44336', color: 'white', fontWeight: 700, fontSize: 10 }} />
+          )}
+          {/* ✅ isOnOffer */}
+          {item.isOnOffer && item.discountPercent > 0 && (
+            <Chip
+              label={`${item.discountPercent}% OFF`}
+              size="small"
+              sx={{ bgcolor: '#7B1FA2', color: 'white', fontWeight: 800, fontSize: 10 }}
+            />
+          )}
+        </Box>
+
+        {/* ── Availability toggle: top-right ── */}
+        <Box sx={{ position: 'absolute', top: 6, right: 6, bgcolor: 'rgba(255,255,255,0.9)', borderRadius: 2, px: 0.5 }}>
+          <Switch size="small" checked={item.isAvailable ?? true}
+            onChange={() => onToggle(item)} color="success" />
+        </Box>
       </Box>
-      {item.description && (
-        <Typography variant="caption" color="text.secondary"
-          sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', mb: 1 }}>
-          {item.description}
-        </Typography>
-      )}
-      <Box display="flex" gap={1.5} mb={1.5} flexWrap="wrap">
-        {item.preparationTime && (
-          <Box display="flex" alignItems="center" gap={0.3}>
-            <AccessTime sx={{ fontSize: 13, color: 'text.secondary' }} />
-            <Typography variant="caption" color="text.secondary">{item.preparationTime} min</Typography>
+
+      <CardContent sx={{ p: 2 }}>
+        <Chip label={CATEGORY_LABELS[item.category]} size="small"
+          sx={{ bgcolor: '#FFF3EC', color: '#FF6B35', fontWeight: 600, fontSize: 10, mb: 1 }} />
+
+        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={0.5}>
+          <Typography variant="subtitle1" fontWeight={700} sx={{ flex: 1, pr: 1, lineHeight: 1.3 }}>
+            {item.name}
+          </Typography>
+          <Box textAlign="right">
+            {finalPrice ? (
+              <>
+                <Typography variant="caption"
+                  sx={{ textDecoration: 'line-through', color: 'text.secondary', display: 'block', lineHeight: 1 }}>
+                  {formatCurrency(item.price)}
+                </Typography>
+                <Typography variant="subtitle1" fontWeight={800} sx={{ color: '#7B1FA2' }}>
+                  {formatCurrency(finalPrice)}
+                </Typography>
+              </>
+            ) : (
+              <Typography variant="subtitle1" fontWeight={800} color="primary.main">
+                {formatCurrency(item.price)}
+              </Typography>
+            )}
           </Box>
+        </Box>
+
+        {/* ✅ isOnOffer */}
+        {item.isOnOffer && item.offerLabel && (
+          <Typography variant="caption" sx={{ color: '#7B1FA2', fontWeight: 600, display: 'block', mb: 0.5 }}>
+            🏷️ {item.offerLabel}
+          </Typography>
         )}
-        {item.calories && (
-          <Typography variant="caption" color="text.secondary">{item.calories} kcal</Typography>
+
+        {item.description && (
+          <Typography variant="caption" color="text.secondary"
+            sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', mb: 1 }}>
+            {item.description}
+          </Typography>
         )}
-        {item.rating > 0 && (
-          <Box display="flex" alignItems="center" gap={0.3}>
-            <Star sx={{ fontSize: 13, color: '#FF9800' }} />
-            <Typography variant="caption" fontWeight={600}>{item.rating.toFixed(1)}</Typography>
-          </Box>
-        )}
-      </Box>
-      <Box display="flex" justifyContent="flex-end" gap={1}>
-        <Tooltip title="Edit">
-          <IconButton size="small" onClick={() => onEdit(item)}
-            sx={{ bgcolor: '#F5F5F5', '&:hover': { bgcolor: '#E3F2FD' } }}>
-            <Edit fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Delete">
-          <IconButton size="small" onClick={() => onDelete(item)}
-            sx={{ bgcolor: '#F5F5F5', '&:hover': { bgcolor: '#FFEBEE' } }}>
-            <Delete fontSize="small" color="error" />
-          </IconButton>
-        </Tooltip>
-      </Box>
-    </CardContent>
-  </Card>
-));
+
+        <Box display="flex" gap={1.5} mb={1.5} flexWrap="wrap">
+          {item.preparationTime && (
+            <Box display="flex" alignItems="center" gap={0.3}>
+              <AccessTime sx={{ fontSize: 13, color: 'text.secondary' }} />
+              <Typography variant="caption" color="text.secondary">{item.preparationTime} min</Typography>
+            </Box>
+          )}
+          {item.calories && (
+            <Typography variant="caption" color="text.secondary">{item.calories} kcal</Typography>
+          )}
+          {item.rating > 0 && (
+            <Box display="flex" alignItems="center" gap={0.3}>
+              <Star sx={{ fontSize: 13, color: '#FF9800' }} />
+              <Typography variant="caption" fontWeight={600}>{item.rating.toFixed(1)}</Typography>
+            </Box>
+          )}
+        </Box>
+
+        <Box display="flex" justifyContent="flex-end" gap={1}>
+          <Tooltip title="Edit">
+            <IconButton size="small" onClick={() => onEdit(item)}
+              sx={{ bgcolor: '#F5F5F5', '&:hover': { bgcolor: '#E3F2FD' } }}>
+              <Edit fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Delete">
+            <IconButton size="small" onClick={() => onDelete(item)}
+              sx={{ bgcolor: '#F5F5F5', '&:hover': { bgcolor: '#FFEBEE' } }}>
+              <Delete fontSize="small" color="error" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+});
 
 
+// ─── MenuItemDialog ─────────────────────────────────────────────
 const MenuItemDialog = ({
   open, onClose, onSave, initial, restaurantId,
 }: {
@@ -169,6 +219,9 @@ const MenuItemDialog = ({
         isBestseller: initial.isBestseller,
         isSpicy: initial.isSpicy,
         spiceLevel: initial.spiceLevel || 0,
+        isOnOffer: initial.isOnOffer || false,        // ✅
+        discountPercent: initial.discountPercent || 0,
+        offerLabel: initial.offerLabel || '',
       });
     } else {
       setForm({ ...emptyForm(), restaurantId });
@@ -181,6 +234,8 @@ const MenuItemDialog = ({
   const handleSave = async () => {
     if (!form.name.trim()) return toast.error('Item name is required');
     if (!form.price || form.price <= 0) return toast.error('Valid price is required');
+    if (form.isOnOffer && (!form.discountPercent || form.discountPercent <= 0))  // ✅
+      return toast.error('Discount % is required when offer is enabled');
     setSaving(true);
     try {
       await onSave(form);
@@ -197,6 +252,7 @@ const MenuItemDialog = ({
       </DialogTitle>
       <DialogContent dividers>
         <Grid container spacing={2} sx={{ pt: 1 }}>
+
           <Grid size={{ xs: 12, sm: 8 }}>
             <TextField fullWidth label="Item Name *" value={form.name}
               onChange={e => set('name', e.target.value)} size="small" />
@@ -253,6 +309,8 @@ const MenuItemDialog = ({
               inputProps={{ min: 0, max: 5 }}
               onChange={e => set('spiceLevel', parseInt(e.target.value))} />
           </Grid>
+
+          {/* ── Flags ── */}
           <Grid size={{ xs: 12 }}>
             <Box display="flex" flexWrap="wrap" gap={1}>
               {([
@@ -269,6 +327,65 @@ const MenuItemDialog = ({
               ))}
             </Box>
           </Grid>
+
+          {/* ── Offer / Discount Section ── */}
+          <Grid size={{ xs: 12 }}>
+            <Divider sx={{ my: 0.5 }} />
+            <Typography variant="subtitle2" fontWeight={700} color="text.secondary" mt={1} mb={0.5}>
+              🏷️ OFFER / DISCOUNT
+            </Typography>
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  size="small"
+                  checked={!!form.isOnOffer}                  // ✅
+                  onChange={e => {
+                    set('isOnOffer', e.target.checked);       // ✅
+                    if (!e.target.checked) {
+                      set('discountPercent', 0);
+                      set('offerLabel', '');
+                    }
+                  }}
+                />
+              }
+              label="Enable Offer"
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <TextField
+              fullWidth
+              label="Discount %"
+              type="number"
+              size="small"
+              disabled={!form.isOnOffer}                      // ✅
+              value={form.discountPercent || ''}
+              inputProps={{ min: 1, max: 99 }}
+              onChange={e => set('discountPercent', parseInt(e.target.value))}
+              InputProps={{ endAdornment: <InputAdornment position="end">%</InputAdornment> }}
+              helperText={
+                form.isOnOffer && form.discountPercent && form.price  // ✅
+                  ? `Final: ${formatCurrency(form.price - (form.price * form.discountPercent) / 100)}`
+                  : ' '
+              }
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <TextField
+              fullWidth
+              label="Offer Label"
+              size="small"
+              disabled={!form.isOnOffer}                      // ✅
+              value={form.offerLabel || ''}
+              placeholder="e.g. Weekend Special"
+              onChange={e => set('offerLabel', e.target.value)}
+            />
+          </Grid>
+
         </Grid>
       </DialogContent>
       <DialogActions sx={{ px: 3, py: 2 }}>
@@ -283,6 +400,7 @@ const MenuItemDialog = ({
 };
 
 
+// ─── DeleteDialog ───────────────────────────────────────────────
 const DeleteDialog = ({
   item, onClose, onConfirm,
 }: { item: MenuItem | null; onClose: () => void; onConfirm: () => void }) => (
@@ -303,6 +421,7 @@ const DeleteDialog = ({
 );
 
 
+// ─── MenuPage ───────────────────────────────────────────────────
 const MenuPage = () => {
   const { user } = useAuth();
   const [items, setItems] = useState<MenuItem[]>([]);
@@ -316,8 +435,6 @@ const MenuPage = () => {
   const [deleteItem, setDeleteItem] = useState<MenuItem | null>(null);
 
   const restaurantId = user?.restaurantId ?? 0;
-
-  // ✅ Debounced search — 300ms delay
   const debouncedSearch = useDebounce(search, 300);
 
   const fetchItems = useCallback(async () => {
@@ -336,7 +453,6 @@ const MenuPage = () => {
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
-  // ✅ useMemo — filter sirf tab re-run hoga jab dependency change ho
   const filtered = useMemo(() => items.filter(item => {
     const matchSearch = item.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
       item.description?.toLowerCase().includes(debouncedSearch.toLowerCase());
@@ -344,15 +460,13 @@ const MenuPage = () => {
     const matchVeg = filterVeg === 'ALL' ||
       (filterVeg === 'VEG' ? item.isVegetarian : !item.isVegetarian);
     return matchSearch && matchCat && matchVeg;
-  }), [items, debouncedSearch, filterCategory, filterVeg]); // ✅
+  }), [items, debouncedSearch, filterCategory, filterVeg]);
 
-  // ✅ useMemo — categories list
   const usedCategories = useMemo(
     () => Array.from(new Set(items.map(i => i.category))),
     [items]
   );
 
-  // ✅ useCallback — handlers stable reference
   const handleSave = useCallback(async (data: MenuItemRequest) => {
     try {
       if (editItem) {
@@ -395,7 +509,6 @@ const MenuPage = () => {
   const openAdd = useCallback(() => { setEditItem(null); setDialogOpen(true); }, []);
   const openEdit = useCallback((item: MenuItem) => { setEditItem(item); setDialogOpen(true); }, []);
 
-  // ✅ useMemo — stats
   const { available, bestsellers, vegItems } = useMemo(() => ({
     available: items.filter(i => i.isAvailable).length,
     bestsellers: items.filter(i => i.isBestseller).length,
@@ -420,9 +533,7 @@ const MenuPage = () => {
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}
-          action={
-            <Button color="error" size="small" onClick={fetchItems}>Retry</Button>
-          }>
+          action={<Button color="error" size="small" onClick={fetchItems}>Retry</Button>}>
           {error}
         </Alert>
       )}
@@ -479,7 +590,7 @@ const MenuPage = () => {
           description={
             items.length === 0
               ? 'Start by adding your first menu item to the restaurant.'
-              : 'Try changing or clearing your search filters.'
+              : 'Try changing or filtering your search filters.'
           }
           actionLabel={items.length === 0 ? 'Add First Item' : undefined}
           onAction={items.length === 0 ? openAdd : undefined}

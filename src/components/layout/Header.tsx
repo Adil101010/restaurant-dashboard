@@ -71,7 +71,7 @@ const Header = ({ drawerWidth, onMenuClick }: HeaderProps) => {
     >
       <Toolbar sx={{ justifyContent: 'space-between' }}>
 
-        {/* Left — Hamburger (mobile only) */}
+      
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <IconButton
             color="inherit"
@@ -87,10 +87,10 @@ const Header = ({ drawerWidth, onMenuClick }: HeaderProps) => {
           </Typography>
         </Box>
 
-        {/* Right — Status + Avatar */}
+      
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 
-          {/* Online Status */}
+       
           <Chip
             icon={<Circle sx={{ fontSize: '10px !important', color: '#4CAF50 !important' }} />}
             label="Online"
@@ -104,7 +104,7 @@ const Header = ({ drawerWidth, onMenuClick }: HeaderProps) => {
             }}
           />
 
-          {/* Avatar + Dropdown */}
+         
           <IconButton onClick={handleMenuOpen} sx={{ p: 0.5 }}>
             <Avatar
               sx={{
@@ -119,7 +119,7 @@ const Header = ({ drawerWidth, onMenuClick }: HeaderProps) => {
             </Avatar>
           </IconButton>
 
-          {/* Dropdown Menu */}
+      
           <Menu
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}
@@ -131,7 +131,7 @@ const Header = ({ drawerWidth, onMenuClick }: HeaderProps) => {
               sx: { mt: 1, minWidth: 200, borderRadius: 2 },
             }}
           >
-            {/* User Info */}
+          
             <Box sx={{ px: 2, py: 1.5 }}>
               <Typography variant="subtitle2" fontWeight={700}>
                 {user?.restaurantName}

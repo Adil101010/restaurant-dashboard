@@ -37,6 +37,13 @@ export interface CreateCouponRequest {
   applicableFor: string;
 }
 
+ export interface UpdateCouponRequest {
+  description?: string;
+  validUntil?: string;
+  maxUsageCount?: number;
+  minOrderAmount?: number;
+}
+
 export const promotionsApi = {
   getRestaurantCoupons: async (restaurantId: number): Promise<Coupon[]> => {
     const response = await axiosInstance.get<Coupon[]>(
@@ -61,4 +68,13 @@ export const promotionsApi = {
     );
     return response.data;
   },
+ 
+  updateCoupon: async (couponId: number, data: UpdateCouponRequest): Promise<Coupon> => {
+  const response = await axiosInstance.put<Coupon>(
+    `/api/coupons/${couponId}`,
+    data
+  );
+  return response.data;
+},
+
 };

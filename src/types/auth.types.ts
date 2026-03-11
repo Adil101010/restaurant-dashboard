@@ -1,6 +1,7 @@
 export interface LoginRequest {
    emailOrPhone: string;
   password: string;
+  expectedRole?: string; 
 }
 
 export interface LoginResponse {

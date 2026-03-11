@@ -22,6 +22,11 @@ export interface MenuItem {
   spiceLevel: number;
   createdAt: string;
   updatedAt: string;
+
+  isOnOffer: boolean;       // ✅ backend se match
+  discountPercent: number;
+  offerLabel: string;
+  discountedPrice: number;
 }
 
 export type Category =
@@ -47,6 +52,10 @@ export interface MenuItemRequest {
   isBestseller?: boolean;
   isSpicy?: boolean;
   spiceLevel?: number;
+
+  isOnOffer?: boolean;      // ✅ backend se match
+  discountPercent?: number;
+  offerLabel?: string;
 }
 
 export const CATEGORY_LABELS: Record<Category, string> = {
@@ -88,5 +97,6 @@ export const menuApi = {
     api.patch<MenuItem>(`/api/menu/items/${id}/availability`).then(r => r.data),
 
   getByCategory: (restaurantId: number, category: Category) =>
-    api.get<MenuItem[]>(`/api/menu/restaurant/${restaurantId}/category/${category}`).then(r => r.data),
+    api.get<MenuItem[]>(`/api/menu/restaurant/${restaurantId}/category/${category}`)
+      .then(r => r.data),
 };
