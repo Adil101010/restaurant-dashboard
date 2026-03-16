@@ -1,5 +1,6 @@
 import api from './axiosConfig';
 
+// ─── Types ───
 export interface Restaurant {
   id: number;
   ownerId: number;
@@ -12,7 +13,7 @@ export interface Restaurant {
   phone: string;
   email: string;
   cuisine: string;
-  openingTime: string;   // "HH:mm:ss"
+  openingTime: string;
   closingTime: string;
   rating: number;
   totalReviews: number;
@@ -45,10 +46,15 @@ export interface RestaurantRequest {
   avgDeliveryTime?: number;
 }
 
+// ─── Restaurant API ───
 export const restaurantApi = {
-  getById: (id: number) =>
+
+  register: (data: RestaurantRequest): Promise<Restaurant> =>
+    api.post<Restaurant>('/api/restaurants/register', data).then(r => r.data),
+
+  getById: (id: number): Promise<Restaurant> =>
     api.get<Restaurant>(`/api/restaurants/${id}`).then(r => r.data),
 
-  update: (id: number, data: RestaurantRequest) =>
+  update: (id: number, data: RestaurantRequest): Promise<Restaurant> =>
     api.put<Restaurant>(`/api/restaurants/${id}`, data).then(r => r.data),
 };

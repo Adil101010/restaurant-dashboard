@@ -7,18 +7,17 @@ import Layout from './components/layout/Layout';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import OfflineBanner from './components/common/OfflineBanner';
 import { CircularProgress, Box } from '@mui/material';
+
+// ── Lazy Load — har page alag chunk ──
+const LoginPage      = lazy(() => import('./pages/LoginPage'));
+const SignupPage     = lazy(() => import('./pages/SignupPage'));   // ✅ lazy kiya
+const DashboardPage  = lazy(() => import('./pages/DashboardPage'));
+const MenuPage       = lazy(() => import('./pages/MenuPage'));
+const OrdersPage     = lazy(() => import('./pages/OrdersPage'));
+const ProfilePage    = lazy(() => import('./pages/ProfilePage'));
+const SettingsPage   = lazy(() => import('./pages/SettingsPage'));
 const PromotionsPage = lazy(() => import('./pages/PromotionsPage'));
 
-//  Lazy load — har page alag chunk banega
-const LoginPage     = lazy(() => import('./pages/LoginPage'));
-const DashboardPage = lazy(() => import('./pages/DashboardPage'));
-const MenuPage      = lazy(() => import('./pages/MenuPage'));
-const OrdersPage    = lazy(() => import('./pages/OrdersPage'));
-const ProfilePage   = lazy(() => import('./pages/ProfilePage'));
-const SettingsPage  = lazy(() => import('./pages/SettingsPage'));
-
-
-//  Page load hone tak fallback
 const PageLoader = () => (
   <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
     <CircularProgress sx={{ color: '#FF6B35' }} />
@@ -39,22 +38,28 @@ function App() {
               success: { iconTheme: { primary: '#FF6B35', secondary: '#fff' } },
             }}
           />
-          {/*  Suspense — lazy pages ke liye */}
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              <Route path="/login" element={<LoginPage />} />
+
+              {/* ── Public Routes — bina login ke accessible ── */}
+              <Route path="/login"  element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />  {/* ✅ bahar nikala */}
+
+              {/* ── Protected Routes — login ke baad ── */}
               <Route element={<ProtectedRoute />}>
                 <Route element={<Layout />}>
-                  <Route path="/"        element={<DashboardPage />} />
-                  <Route path="/menu"    element={<MenuPage />} />
-                  <Route path="/orders"  element={<OrdersPage />} />
-                  <Route path="/profile" element={<ProfilePage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
-                  <Route path="/promotions" element={<PromotionsPage />} />
-
+                  <Route path="/"            element={<DashboardPage />} />
+                  <Route path="/menu"        element={<MenuPage />} />
+                  <Route path="/orders"      element={<OrdersPage />} />
+                  <Route path="/profile"     element={<ProfilePage />} />
+                  <Route path="/settings"    element={<SettingsPage />} />
+                  <Route path="/promotions"  element={<PromotionsPage />} />
                 </Route>
               </Route>
+
+              {/* ── Fallback ── */}
               <Route path="*" element={<Navigate to="/" replace />} />
+
             </Routes>
           </Suspense>
         </BrowserRouter>

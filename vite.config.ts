@@ -11,7 +11,10 @@ export default defineConfig({
       '@': '/src',
     },
   },
-  // Production build optimization
+  define: {
+    global: {},          // 👈 ye add karo
+    // "process.env": {}, // future ke liye, optional
+  },
   build: {
     rollupOptions: {
       output: {
