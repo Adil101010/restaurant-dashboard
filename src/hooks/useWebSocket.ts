@@ -23,7 +23,7 @@ export const useWebSocket = ({ restaurantId, onNewOrder, onOrderUpdate }: UseWeb
     if (!restaurantId) return;
 
     const client = new Client({
-      webSocketFactory: () => new SockJS('http://localhost:8085/ws'),
+      webSocketFactory: () => new SockJS('http://192.168.0.116:8085/ws'),
       reconnectDelay: 5000,
 
       onConnect: () => {
