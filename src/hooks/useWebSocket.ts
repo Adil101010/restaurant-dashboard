@@ -1,6 +1,5 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 
 interface WebSocketMessage {
   type: string;
@@ -18,53 +17,49 @@ interface UseWebSocketProps {
 
 export const useWebSocket = ({ restaurantId, onNewOrder, onOrderUpdate }: UseWebSocketProps) => {
   const clientRef = useRef<Client | null>(null);
+  const onNewOrderRef = useRef(onNewOrder);
+  const onOrderUpdateRef = useRef(onOrderUpdate);
 
-  const connect = useCallback(() => {
+  useEffect(() => { onNewOrderRef.current = onNewOrder; }, [onNewOrder]);
+  useEffect(() => { onOrderUpdateRef.current = onOrderUpdate; }, [onOrderUpdate]);
+
+  useEffect(() => {
     if (!restaurantId) return;
 
+    console.log('🔌 Connecting WebSocket for restaurantId:', restaurantId);
+
     const client = new Client({
-      webSocketFactory: () => new SockJS('http://192.168.0.116:8085/ws'),
+      brokerURL: 'ws://192.168.0.116:8085/ws',
       reconnectDelay: 5000,
 
       onConnect: () => {
-        console.log('WebSocket connected');
+        console.log('✅ WebSocket connected! restaurantId:', restaurantId);
 
-        
-        client.subscribe(
-          `/topic/restaurant/${restaurantId}/new-order`,
-          (message) => {
-            const data: WebSocketMessage = JSON.parse(message.body);
-            onNewOrder(data);
-          }
-        );
+        client.subscribe(`/topic/restaurant/${restaurantId}/new-order`, (message) => {
+          const data: WebSocketMessage = JSON.parse(message.body);
+          console.log('🛒 New order:', data);
+          onNewOrderRef.current(data);
+        });
 
-      
-        client.subscribe(
-          `/topic/restaurant/${restaurantId}/order-update`,
-          (message) => {
-            const data: WebSocketMessage = JSON.parse(message.body);
-            onOrderUpdate(data);
-          }
-        );
+        client.subscribe(`/topic/restaurant/${restaurantId}/order-update`, (message) => {
+          const data: WebSocketMessage = JSON.parse(message.body);
+          console.log('📦 Order update:', data);
+          onOrderUpdateRef.current(data);
+        });
       },
 
-      onDisconnect: () => {
-        console.log('WebSocket disconnected');
-      },
-
-      onStompError: (frame) => {
-        console.error('WebSocket error:', frame);
-      },
+      onDisconnect: () => console.log('❌ WebSocket disconnected'),
+      onStompError: (frame) => console.error('❌ STOMP error:', frame),
+      onWebSocketError: (e) => console.error('❌ WS error:', e),
+      onWebSocketClose: (e) => console.error('❌ WS closed:', e.code, e.reason),
     });
 
     client.activate();
     clientRef.current = client;
-  }, [restaurantId, onNewOrder, onOrderUpdate]);
 
-  useEffect(() => {
-    connect();
     return () => {
-      clientRef.current?.deactivate();
+      console.log('🔄 WebSocket cleanup');
+      client.deactivate();
     };
-  }, [connect]);
+  }, [restaurantId]);
 };

@@ -4,7 +4,12 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
+    host: '0.0.0.0',        // ✅ ADD — sab IPs pe listen karo
     port: 5173,
+    hmr: {
+      host: '192.168.0.116', // ✅ ADD — apna WiFi IP
+      port: 5173,
+    },
   },
   resolve: {
     alias: {
@@ -12,8 +17,7 @@ export default defineConfig({
     },
   },
   define: {
-    global: {},          // 👈 ye add karo
-    // "process.env": {}, // future ke liye, optional
+    global: {},
   },
   build: {
     rollupOptions: {

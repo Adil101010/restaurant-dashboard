@@ -15,6 +15,7 @@ import {
 } from '@mui/icons-material';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import { useOutletContext } from 'react-router-dom';
 import {
   orderApi, type OrderResponse, type OrderStatus,
 } from '../api/orderApi';
@@ -206,8 +207,17 @@ const TAB_FILTERS: (OrderStatus | 'ALL')[] = [
   'ALL', 'PENDING', 'CONFIRMED', 'PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED',
 ];
 
+// ✅ OutletContext type
+interface LayoutOutletContext {
+  registerRefresh: (cb: () => void) => void;
+}
+
 const OrdersPage = () => {
   const { user } = useAuth();
+
+  // ✅ Props ki jagah OutletContext se lo
+  const { registerRefresh } = useOutletContext<LayoutOutletContext>();
+
   const [orders, setOrders] = useState<OrderResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -224,10 +234,7 @@ const OrdersPage = () => {
 
   const restaurantId = user?.restaurantId ?? 0;
   const debouncedSearch = useDebounce(search, 300);
-
   const activeFilter = TAB_FILTERS[tabIndex];
-
-  
   const isOnAllTab = activeFilter === 'ALL';
 
   const fetchInitial = useCallback(async () => {
@@ -249,7 +256,6 @@ const OrdersPage = () => {
   }, [restaurantId]);
 
   const fetchMore = useCallback(async () => {
-   
     if (!restaurantId || isLoadingMore || !hasMore || !isOnAllTab) return;
     setIsLoadingMore(true);
     try {
@@ -265,28 +271,25 @@ const OrdersPage = () => {
     }
   }, [restaurantId, currentPage, hasMore, isLoadingMore, isOnAllTab]);
 
+  // Initial load
   useEffect(() => { fetchInitial(); }, [fetchInitial]);
 
-  
+  // ✅ WebSocket se refresh register karo
+  useEffect(() => {
+    registerRefresh(fetchInitial);
+  }, [registerRefresh, fetchInitial]);
+
+  // Infinite scroll
   useEffect(() => {
     if (!hasMore || isLoading || !isOnAllTab) return;
-
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
-
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !isLoadingMore) {
-          fetchMore();
-        }
+        if (entries[0].isIntersecting && !isLoadingMore) fetchMore();
       },
-      {
-        root: scrollBoxRef.current,
-        threshold: 0.1,
-        rootMargin: '100px',
-      }
+      { root: scrollBoxRef.current, threshold: 0.1, rootMargin: '100px' }
     );
-
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [fetchMore, hasMore, isLoadingMore, isLoading, isOnAllTab]);
@@ -319,16 +322,12 @@ const OrdersPage = () => {
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-
-     
       <Box sx={{ flexShrink: 0 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}
           flexWrap="wrap" gap={2}>
           <Box>
             <Typography variant="h5" fontWeight={700}>Orders</Typography>
-            <Typography variant="body2" color="text.secondary">
-              {totalElements} 
-            </Typography>
+            <Typography variant="body2" color="text.secondary">{totalElements} total orders</Typography>
           </Box>
           <Button variant="outlined" startIcon={<Receipt />} onClick={fetchInitial}
             sx={{ borderRadius: 2 }}>
@@ -343,9 +342,7 @@ const OrdersPage = () => {
           </Alert>
         )}
 
-        <Tabs
-          value={tabIndex}
-          onChange={(_, v) => setTabIndex(v)}
+        <Tabs value={tabIndex} onChange={(_, v) => setTabIndex(v)}
           variant="scrollable" scrollButtons="auto"
           sx={{
             mb: 2, bgcolor: 'white', borderRadius: 2, px: 1,
@@ -384,7 +381,6 @@ const OrdersPage = () => {
         </Box>
       </Box>
 
-     
       <Box ref={scrollBoxRef} sx={{ flexGrow: 1, overflow: 'auto', minHeight: 0 }}>
         <TableContainer component={Paper}
           sx={{ borderRadius: 3, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
@@ -491,7 +487,6 @@ const OrdersPage = () => {
                     </TableRow>
                   ))}
 
-                
                   {hasMore && isOnAllTab && (
                     <TableRow>
                       <TableCell colSpan={8} sx={{ border: 0, p: 0 }}>
@@ -505,7 +500,6 @@ const OrdersPage = () => {
           </Table>
         </TableContainer>
 
-      
         {isLoadingMore && isOnAllTab && (
           <Box display="flex" justifyContent="center" alignItems="center" py={2} gap={1}>
             <CircularProgress size={18} sx={{ color: '#FF6B35' }} />
@@ -513,7 +507,6 @@ const OrdersPage = () => {
           </Box>
         )}
 
-        
         {!hasMore && orders.length > 0 && !isLoading && isOnAllTab && (
           <Box textAlign="center" py={2}>
             <Typography variant="caption" color="text.secondary">
