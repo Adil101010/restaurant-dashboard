@@ -9,15 +9,14 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import NotificationBell, { type NotificationItem } from '../notifications/NotificationBell';
-
+import type { WebSocketMessage } from '../../hooks/useWebSocket'; 
 interface HeaderProps {
   drawerWidth: number;
   onMenuClick: () => void;
 }
 
-//  Notification sound
 const playNotificationSound = () => {
- const audio = new Audio('/sounds/new-order.mp3');
+  const audio = new Audio('/sounds/new-order.mp3');
   audio.volume = 0.5;
   audio.play().catch(() => {});
 };
@@ -28,49 +27,78 @@ const Header = ({ drawerWidth, onMenuClick }: HeaderProps) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
-  //  Naya order aaya — restaurant ko alert
-  const handleNewOrder = useCallback((data: { type: string; subject: string; message: string; timestamp: string; orderId: number }) => {
+
+const handleNewOrder = useCallback((data: WebSocketMessage) => {
+    console.log(' NEW_ORDER received:', data);
+    
+    
+    const exists = notifications.some(n => 
+      n.orderId === data.orderId && n.type === 'NEW_ORDER'
+    );
+    
+    if (exists) {
+      console.log(' Duplicate NEW_ORDER skipped:', data.orderId);
+      return;
+    }
+
     playNotificationSound();
-    toast.success(`🛎️ New Order! #${data.orderId}`, {
+
+    toast.success(` New Order! #${data.orderId} — Tap to view`, {
       duration: 6000,
       position: 'top-right',
+      style: { cursor: 'pointer' },
     });
-    setNotifications((prev) => [
-      {
-        id: Date.now(),
-        type: 'NEW_ORDER',
-        subject: `New Order #${data.orderId}`,
-        message: data.message,
-        timestamp: data.timestamp || new Date().toISOString(),
-        isRead: false,
-      },
-      ...prev.slice(0, 19), // max 20 notifications
-    ]);
-  }, []);
 
-  //  Order update — restaurant ko alert
-  const handleOrderUpdate = useCallback((data: { type: string; subject: string; message: string; timestamp: string; orderId: number }) => {
-    setNotifications((prev) => [
-      {
-        id: Date.now(),
-        type: data.type,
-        subject: data.subject || `Order #${data.orderId} Updated`,
-        message: data.message,
-        timestamp: data.timestamp || new Date().toISOString(),
-        isRead: false,
-      },
-      ...prev.slice(0, 19),
-    ]);
-  }, []);
+    const newNotif: NotificationItem = {
+      id: Date.now(),
+      type: 'NEW_ORDER',
+      orderId: data.orderId,
+      subject: `New Order #${data.orderId}`,
+      message: data.message || data.subject || 'New order received',
+      timestamp: data.timestamp || new Date().toISOString(),
+      isRead: false,
+    };
 
-  //  WebSocket connect
+    console.log(' NEW_ORDER added:', newNotif);
+    setNotifications(prev => [newNotif, ...prev.slice(0, 19)]);
+  }, [notifications]);
+
+ 
+  const handleOrderUpdate = useCallback((data: WebSocketMessage) => {
+    console.log(' ORDER_UPDATE received:', data);
+    
+   
+    const exists = notifications.some(n => 
+      n.orderId === data.orderId && n.type === data.type
+    );
+    
+    if (exists) {
+      console.log('Duplicate ORDER_UPDATE skipped:', data.orderId);
+      return;
+    }
+
+    const newNotif: NotificationItem = {
+      id: Date.now(),
+      type: data.type || 'ORDER_UPDATE',
+      orderId: data.orderId,
+      subject: data.subject || `Order #${data.orderId} Updated`,
+      message: data.message || 'Order status updated',
+      timestamp: data.timestamp || new Date().toISOString(),
+      isRead: false,
+    };
+
+    console.log(' ORDER_UPDATE added:', newNotif);
+    setNotifications(prev => [newNotif, ...prev.slice(0, 19)]);
+  }, [notifications]);
+
+  
   useWebSocket({
     restaurantId: user?.restaurantId ?? null,
     onNewOrder: handleNewOrder,
     onOrderUpdate: handleOrderUpdate,
   });
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
+  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
 
   const handleLogout = async () => {
@@ -83,6 +111,24 @@ const Header = ({ drawerWidth, onMenuClick }: HeaderProps) => {
       toast.error('Logout failed. Please try again.');
     }
   };
+
+  
+  const handleNotificationClick = useCallback((notification: NotificationItem) => {
+    setNotifications(prev =>
+      prev.map(n => n.id === notification.id ? { ...n, isRead: true } : n)
+    );
+    navigate('/orders');
+  }, [navigate]);
+
+  const handleClearAll = useCallback(() => {
+    setNotifications([]);
+  }, []);
+
+  const handleMarkRead = useCallback((id: number) => {
+    setNotifications(prev =>
+      prev.map(n => n.id === id ? { ...n, isRead: true } : n)
+    );
+  }, []);
 
   return (
     <AppBar
@@ -98,7 +144,6 @@ const Header = ({ drawerWidth, onMenuClick }: HeaderProps) => {
       }}
     >
       <Toolbar sx={{ justifyContent: 'space-between' }}>
-
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <IconButton
             color="inherit"
@@ -114,7 +159,6 @@ const Header = ({ drawerWidth, onMenuClick }: HeaderProps) => {
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-
           <Chip
             icon={<Circle sx={{ fontSize: '10px !important', color: '#4CAF50 !important' }} />}
             label="Online"
@@ -128,15 +172,12 @@ const Header = ({ drawerWidth, onMenuClick }: HeaderProps) => {
             }}
           />
 
-          {/* ✅ Notification Bell */}
+          
           <NotificationBell
             notifications={notifications}
-            onClearAll={() => setNotifications([])}
-            onMarkRead={(id) =>
-              setNotifications((prev) =>
-                prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-              )
-            }
+            onClearAll={handleClearAll}
+            onMarkRead={handleMarkRead}
+            onNotificationClick={handleNotificationClick}
           />
 
           <IconButton onClick={handleMenuOpen} sx={{ p: 0.5 }}>

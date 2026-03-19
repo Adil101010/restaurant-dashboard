@@ -8,6 +8,7 @@ import { Notifications, NotificationsNone } from '@mui/icons-material';
 export interface NotificationItem {
   id: number;
   type: string;
+  orderId?: number;                         
   subject: string;
   message: string;
   timestamp: string;
@@ -18,11 +19,24 @@ interface NotificationBellProps {
   notifications: NotificationItem[];
   onClearAll: () => void;
   onMarkRead: (id: number) => void;
+  onNotificationClick?: (notification: NotificationItem) => void; 
 }
 
-const NotificationBell = ({ notifications, onClearAll, onMarkRead }: NotificationBellProps) => {
+const NotificationBell = ({
+  notifications,
+  onClearAll,
+  onMarkRead,
+  onNotificationClick,                       
+}: NotificationBellProps) => {
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  
+  const handleNotificationClick = (notif: NotificationItem) => {
+    onMarkRead(notif.id);
+    setAnchorEl(null);                       
+    onNotificationClick?.(notif);            
+  };
 
   return (
     <>
@@ -49,8 +63,7 @@ const NotificationBell = ({ notifications, onClearAll, onMarkRead }: Notificatio
             display="flex"
             justifyContent="space-between"
             alignItems="center"
-            px={2}
-            py={1.5}
+            px={2} py={1.5}
             borderBottom="1px solid #eee"
           >
             <Typography fontWeight={700}>
@@ -63,7 +76,7 @@ const NotificationBell = ({ notifications, onClearAll, onMarkRead }: Notificatio
             )}
           </Box>
 
-          {/* Notification List */}
+        
           {notifications.length === 0 ? (
             <Box p={3} textAlign="center">
               <NotificationsNone sx={{ fontSize: 40, color: '#ccc', mb: 1 }} />
@@ -77,21 +90,22 @@ const NotificationBell = ({ notifications, onClearAll, onMarkRead }: Notificatio
                 <Box key={notif.id}>
                   <ListItem
                     alignItems="flex-start"
-                    onClick={() => onMarkRead(notif.id)}
+                    onClick={() => handleNotificationClick(notif)} 
                     sx={{
                       cursor: 'pointer',
                       bgcolor: notif.isRead ? 'transparent' : '#FFF5F2',
                       '&:hover': { bgcolor: '#FFF5F2' },
-                      px: 2,
-                      py: 1.5,
+                      px: 2, py: 1.5,
                     }}
                   >
-                    {/* Color dot */}
+                   
                     <Box
                       sx={{
-                        width: 8, height: 8, borderRadius: '50%', mt: 0.7, mr: 1.5, flexShrink: 0,
-                        bgcolor: notif.type === 'NEW_ORDER' ? '#4CAF50' :
-                                 notif.type === 'ORDER_CANCELLED' ? '#f44336' : '#FF6B35',
+                        width: 8, height: 8, borderRadius: '50%',
+                        mt: 0.7, mr: 1.5, flexShrink: 0,
+                        bgcolor:
+                          notif.type === 'NEW_ORDER' ? '#4CAF50' :
+                          notif.type === 'ORDER_CANCELLED' ? '#f44336' : '#FF6B35',
                       }}
                     />
                     <ListItemText
@@ -101,11 +115,18 @@ const NotificationBell = ({ notifications, onClearAll, onMarkRead }: Notificatio
                         </Typography>
                       }
                       secondary={
-                        <Typography variant="caption" color="text.secondary">
-                          {new Date(notif.timestamp).toLocaleTimeString('en-IN', {
-                            hour: '2-digit', minute: '2-digit',
-                          })}
-                        </Typography>
+                        <Box>
+                          {notif.message && (
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              {notif.message}
+                            </Typography>
+                          )}
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(notif.timestamp).toLocaleTimeString('en-IN', {
+                              hour: '2-digit', minute: '2-digit',
+                            })}
+                          </Typography>
+                        </Box>
                       }
                     />
                   </ListItem>
