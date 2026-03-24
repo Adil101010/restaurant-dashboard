@@ -53,7 +53,7 @@ const DrawerContent = ({ onClose, isMobile }: { onClose?: () => void; isMobile?:
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
 
-      {/* Logo Section */}
+    
       <Box
         sx={{
           p: 3,
@@ -92,7 +92,7 @@ const DrawerContent = ({ onClose, isMobile }: { onClose?: () => void; isMobile?:
 
       <Divider />
 
-      {/* Navigation Links */}
+     
       <List sx={{ px: 1.5, py: 2, flexGrow: 1 }}>
         {navItems.map((item) => {
           const isActive =
@@ -105,7 +105,7 @@ const DrawerContent = ({ onClose, isMobile }: { onClose?: () => void; isMobile?:
               <ListItemButton
                 onClick={() => {
                   navigate(item.path);
-                  if (isMobile && onClose) onClose(); //  Mobile pe drawer auto-close
+                  if (isMobile && onClose) onClose(); 
                 }}
                 sx={{
                   borderRadius: 2,
@@ -140,10 +140,10 @@ const DrawerContent = ({ onClose, isMobile }: { onClose?: () => void; isMobile?:
         })}
       </List>
 
-      {/* Bottom Version */}
+      
       <Box sx={{ p: 2, textAlign: 'center' }}>
         <Typography variant="caption" color="text.disabled">
-          Restaurant Dashboard v1.0
+          Restaurant Dashboard 
         </Typography>
       </Box>
     </Box>
@@ -157,7 +157,7 @@ const Sidebar = ({ drawerWidth, mobileOpen, onClose, isMobile }: SidebarProps) =
       component="nav"
       sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
     >
-      {/* Mobile Drawer */}
+     
       {isMobile ? (
         <Drawer
           variant="temporary"
@@ -171,10 +171,10 @@ const Sidebar = ({ drawerWidth, mobileOpen, onClose, isMobile }: SidebarProps) =
             },
           }}
         >
-          <DrawerContent onClose={onClose} isMobile={isMobile} /> {/*  Props pass */}
+          <DrawerContent onClose={onClose} isMobile={isMobile} /> 
         </Drawer>
       ) : (
-        /* Desktop Drawer */
+        
         <Drawer
           variant="permanent"
           sx={{
@@ -187,7 +187,7 @@ const Sidebar = ({ drawerWidth, mobileOpen, onClose, isMobile }: SidebarProps) =
           }}
           open
         >
-          <DrawerContent /> {/* Desktop pe onClose ki zaroorat nahi */}
+          <DrawerContent /> 
         </Drawer>
       )}
     </Box>

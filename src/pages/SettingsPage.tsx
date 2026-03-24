@@ -9,7 +9,6 @@ import {
 import toast from 'react-hot-toast';
 import { settingsApi, type UserProfile } from '../api/settingsApi';
 
-// ─── Section Card ──────────────────────────────────────────────
 const SectionCard = ({ title, icon, children }: {
   title: string; icon: React.ReactNode; children: React.ReactNode;
 }) => (
@@ -25,7 +24,7 @@ const SectionCard = ({ title, icon, children }: {
   </Card>
 );
 
-// ─── Main Page ─────────────────────────────────────────────────
+
 const SettingsPage = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,11 +32,11 @@ const SettingsPage = () => {
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
 
-  // Profile form
+ 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
 
-  // Password form
+ 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -46,7 +45,7 @@ const SettingsPage = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [passwordError, setPasswordError] = useState('');
 
-  // ── Fetch profile ──
+  
   useEffect(() => {
     settingsApi.getProfile()
       .then(data => {
@@ -58,7 +57,7 @@ const SettingsPage = () => {
       .finally(() => setIsLoading(false));
   }, []);
 
-  // ── Save Profile ──
+  
   const handleSaveProfile = async () => {
     if (!name.trim()) return toast.error('Name is required');
     setSavingProfile(true);
@@ -86,7 +85,7 @@ const SettingsPage = () => {
     setIsEditingProfile(false);
   };
 
-  // ── Change Password ──
+ 
   const handleChangePassword = async () => {
     setPasswordError('');
     if (!currentPassword) return setPasswordError('Current password is required');
@@ -130,7 +129,7 @@ const SettingsPage = () => {
         </Typography>
       </Box>
 
-      {/* ── Account Info ── */}
+      
       <SectionCard title="Account Information" icon={<Person />}>
         <Grid container spacing={2}>
           <Grid size={{ xs: 12 }}>
@@ -183,7 +182,7 @@ const SettingsPage = () => {
         </Box>
       </SectionCard>
 
-      {/* ── Change Password ── */}
+     
       <SectionCard title="Change Password" icon={<Lock />}>
         {passwordError && (
           <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}

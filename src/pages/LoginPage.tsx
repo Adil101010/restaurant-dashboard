@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { useNavigate, Link } from 'react-router-dom';  // ← Link add kiya
+import { useNavigate, Link } from 'react-router-dom';  
 import toast from 'react-hot-toast';
 import {
   Box, Card, CardContent, TextField, Button, Typography,
@@ -56,7 +56,7 @@ const LoginPage = () => {
       <Card sx={{ maxWidth: 420, width: '100%', borderRadius: 3, boxShadow: 8 }}>
         <CardContent sx={{ p: 4 }}>
 
-          {/* ── Header ── */}
+        
           <Box textAlign="center" mb={4}>
             <Box sx={{
               bgcolor: 'primary.main', borderRadius: '50%', width: 64, height: 64,
@@ -73,14 +73,14 @@ const LoginPage = () => {
             </Typography>
           </Box>
 
-          {/* ── Error Alert ── */}
+          
           {apiError && (
             <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setApiError('')}>
               {apiError}
             </Alert>
           )}
 
-          {/* ── Form ── */}
+         
           <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
             <Controller
               name="emailOrPhone"
@@ -151,7 +151,7 @@ const LoginPage = () => {
             </Button>
           </Box>
 
-          {/* ── Register Link ── */}  {/* ← YAHI NAYA ADD HUA */}
+         
           <Typography variant="body2" color="text.secondary" textAlign="center" mb={1}>
             New restaurant owner?{' '}
             <Link

@@ -15,7 +15,7 @@ const axiosInstance: AxiosInstance = axios.create({
 });
 
 
-// Request Interceptor — har request mein JWT token attach karo
+
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('accessToken');
@@ -28,7 +28,7 @@ axiosInstance.interceptors.request.use(
 );
 
 
-// Token refresh queue
+
 let isRefreshing = false;
 let failedQueue: {
   resolve: (value: unknown) => void;
@@ -48,7 +48,7 @@ const processQueue = (error: AxiosError | null, token: string | null = null) => 
 };
 
 
-// Response Interceptor — 401 pe auto token refresh + Global Error Toasts
+
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: AxiosError) => {
@@ -56,7 +56,7 @@ axiosInstance.interceptors.response.use(
       _retry?: boolean;
     };
 
-    //  401 — Token refresh logic
+   
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -110,7 +110,7 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-    //  Global Error Toasts — 401 ke baad wale errors
+    
     const status = error.response?.status;
     const message = (error.response?.data as { message?: string })?.message;
 

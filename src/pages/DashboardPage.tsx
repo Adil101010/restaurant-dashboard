@@ -79,7 +79,7 @@ const DashboardPage = () => {
 
   return (
     <Box>
-      {/* Page Header */}
+     
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box>
           <Typography variant="h5" fontWeight={700}>
@@ -101,14 +101,14 @@ const DashboardPage = () => {
         </Box>
       </Box>
 
-      {/* Error Alert */}
+      
       {error && (
         <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setError('')}>
           {error}
         </Alert>
       )}
 
-      {/* Stat Cards */}
+      
       <Grid container spacing={3} mb={3}>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <StatCard
@@ -152,7 +152,7 @@ const DashboardPage = () => {
         </Grid>
       </Grid>
 
-      {/* Charts Row */}
+     
       <Grid container spacing={3} mb={3}>
         <Grid size={{ xs: 12, lg: 8 }}>
           <RevenueChart data={weeklyRevenue} isLoading={isLoading} />
@@ -162,7 +162,7 @@ const DashboardPage = () => {
         </Grid>
       </Grid>
 
-      {/* Monthly Stats Row */}
+      
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, sm: 6 }}>
           <StatCard

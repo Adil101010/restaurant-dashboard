@@ -1,4 +1,4 @@
-# 🍕 Restaurant Dashboard
+#  Restaurant Dashboard
 
 Web portal for restaurant owners to manage orders, menu, and analytics in real-time.
 

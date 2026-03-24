@@ -11,7 +11,7 @@ import { Visibility, VisibilityOff, Restaurant } from '@mui/icons-material';
 import { authApi } from '../api/authApi';
 import { restaurantApi } from '../api/restaurantApi';
 
-// ─── Constants ───
+
 const CUISINE_TYPES = [
   'North Indian', 'South Indian', 'Chinese', 'Italian',
   'Fast Food', 'Biryani', 'Pizza', 'Burger',
@@ -29,7 +29,7 @@ const INDIAN_STATES = [
 
 const steps = ['Owner Details', 'Restaurant Info', 'Timings & Extras'];
 
-// ─── Form Type ───
+
 interface SignupFormData {
   email: string;
   password: string;
@@ -49,7 +49,7 @@ interface SignupFormData {
   avgDeliveryTime: string;
 }
 
-// ─── Component ───
+
 const SignupPage = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
@@ -101,7 +101,7 @@ const SignupPage = () => {
     setIsSubmitting(true);
 
     try {
-      // Step 1 — Auth Service
+   
       const authResponse = await authApi.register({
         email: data.email,
         password: data.password,
@@ -109,7 +109,7 @@ const SignupPage = () => {
         role: 'RESTAURANT_OWNER',
       });
 
-      // Step 2 — Restaurant Service
+      
       await restaurantApi.register({
         ownerId: authResponse.userId,
         name: data.restaurantName,
@@ -136,7 +136,7 @@ const SignupPage = () => {
       const message = err?.response?.data?.message || 'Registration failed. Please try again.';
       setApiError(message);
       toast.error(message);
-      // Auth fail hua toh Step 1 pe wapis
+      
       setActiveStep(0);
     } finally {
       setIsSubmitting(false);
@@ -156,7 +156,7 @@ const SignupPage = () => {
       <Card sx={{ maxWidth: 620, width: '100%', borderRadius: 3, boxShadow: 8 }}>
         <CardContent sx={{ p: 4 }}>
 
-          {/* ── Header ── */}
+         
           <Box textAlign="center" mb={3}>
             <Box sx={{
               bgcolor: 'primary.main', borderRadius: '50%',
@@ -173,7 +173,7 @@ const SignupPage = () => {
             </Typography>
           </Box>
 
-          {/* ── Stepper ── */}
+         
           <Stepper activeStep={activeStep} sx={{ mb: 3 }}>
             {steps.map((label) => (
               <Step key={label}>
@@ -182,7 +182,6 @@ const SignupPage = () => {
             ))}
           </Stepper>
 
-          {/* ── Error ── */}
           {apiError && (
             <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setApiError('')}>
               {apiError}
@@ -191,9 +190,7 @@ const SignupPage = () => {
 
           <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
 
-            {/* ══════════════════════════════════
-                STEP 0 — Owner / Account Details
-            ══════════════════════════════════ */}
+           
             {activeStep === 0 && (
               <Grid container spacing={2}>
 
@@ -284,9 +281,7 @@ const SignupPage = () => {
               </Grid>
             )}
 
-            {/* ══════════════════════════════════
-                STEP 1 — Restaurant Info
-            ══════════════════════════════════ */}
+           
             {activeStep === 1 && (
               <Grid container spacing={2}>
 
@@ -367,9 +362,7 @@ const SignupPage = () => {
               </Grid>
             )}
 
-            {/* ══════════════════════════════════
-                STEP 2 — Timings & Extras
-            ══════════════════════════════════ */}
+            
             {activeStep === 2 && (
               <Grid container spacing={2}>
 
@@ -426,7 +419,7 @@ const SignupPage = () => {
               </Grid>
             )}
 
-            {/* ── Navigation Buttons ── */}
+          
             <Box display="flex" justifyContent="space-between" mt={3}>
               <Button
                 variant="outlined"
@@ -470,7 +463,7 @@ const SignupPage = () => {
 
           </Box>
 
-          {/* ── Login Link ── */}
+         
           <Typography variant="body2" color="text.secondary" textAlign="center" mt={2}>
             Already have an account?{' '}
             <Link to="/login" style={{ color: '#FF6B35', fontWeight: 600, textDecoration: 'none' }}>

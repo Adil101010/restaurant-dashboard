@@ -144,7 +144,7 @@ const PromotionsPage = () => {
 
   return (
     <Box>
-      {/* Header */}
+
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box>
           <Typography variant="h5" fontWeight={700}>Promotions</Typography>
@@ -162,7 +162,7 @@ const PromotionsPage = () => {
         </Button>
       </Box>
 
-      {/* Stats Row */}
+      
       <Grid container spacing={2} mb={3}>
         {[
           { label: 'Total Coupons', value: coupons.length, color: '#FF6B35' },
@@ -183,7 +183,6 @@ const PromotionsPage = () => {
         ))}
       </Grid>
 
-      {/* Coupons List */}
       {isLoading ? (
         [...Array(3)].map((_, i) => (
           <Skeleton key={i} variant="rectangular" height={120} sx={{ mb: 2, borderRadius: 2 }} />
@@ -214,7 +213,7 @@ const PromotionsPage = () => {
                 }}
               >
                 <CardContent sx={{ p: 2.5 }}>
-                  {/* Top Row */}
+                  
                   <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1.5}>
                     <Box display="flex" alignItems="center" gap={1}>
                       <Typography
@@ -249,7 +248,7 @@ const PromotionsPage = () => {
                     />
                   </Box>
 
-                  {/* Discount Badge */}
+              
                   <Box
                     sx={{
                       bgcolor: 'rgba(255,107,53,0.1)',
@@ -267,7 +266,7 @@ const PromotionsPage = () => {
                     {coupon.description}
                   </Typography>
 
-                  {/* Details */}
+                 
                   <Box display="flex" flexDirection="column" gap={0.5} mb={2}>
                     <Typography variant="caption" color="text.secondary">
                       Min order: {formatCurrency(coupon.minOrderAmount)}
@@ -282,7 +281,7 @@ const PromotionsPage = () => {
                     </Typography>
                   </Box>
 
-                  {/* Actions */}
+                 
                   {coupon.status === 'ACTIVE' && (
                     <Button
                       fullWidth
@@ -303,7 +302,7 @@ const PromotionsPage = () => {
         </Grid>
       )}
 
-      {/* Create Coupon Dialog */}
+    
       <Dialog
         open={dialogOpen}
         onClose={() => { setDialogOpen(false); reset(); }}
@@ -520,7 +519,7 @@ const PromotionsPage = () => {
         </form>
       </Dialog>
 
-      {/* Edit Coupon Dialog */}
+     
       <Dialog
         open={editDialogOpen}
         onClose={() => { setEditDialogOpen(false); editReset(); }}

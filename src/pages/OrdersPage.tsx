@@ -207,7 +207,7 @@ const TAB_FILTERS: (OrderStatus | 'ALL')[] = [
   'ALL', 'PENDING', 'CONFIRMED', 'PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED',
 ];
 
-// ✅ OutletContext type
+
 interface LayoutOutletContext {
   registerRefresh: (cb: () => void) => void;
 }
@@ -215,7 +215,7 @@ interface LayoutOutletContext {
 const OrdersPage = () => {
   const { user } = useAuth();
 
-  // ✅ Props ki jagah OutletContext se lo
+ 
   const { registerRefresh } = useOutletContext<LayoutOutletContext>();
 
   const [orders, setOrders] = useState<OrderResponse[]>([]);
@@ -271,15 +271,15 @@ const OrdersPage = () => {
     }
   }, [restaurantId, currentPage, hasMore, isLoadingMore, isOnAllTab]);
 
-  // Initial load
+ 
   useEffect(() => { fetchInitial(); }, [fetchInitial]);
 
-  // ✅ WebSocket se refresh register karo
+ 
   useEffect(() => {
     registerRefresh(fetchInitial);
   }, [registerRefresh, fetchInitial]);
 
-  // Infinite scroll
+ 
   useEffect(() => {
     if (!hasMore || isLoading || !isOnAllTab) return;
     const sentinel = sentinelRef.current;

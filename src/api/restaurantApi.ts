@@ -1,6 +1,6 @@
 import api from './axiosConfig';
 
-// ─── Types ───
+
 export interface Restaurant {
   id: number;
   ownerId: number;
@@ -46,7 +46,7 @@ export interface RestaurantRequest {
   avgDeliveryTime?: number;
 }
 
-// ─── Restaurant API ───
+
 export const restaurantApi = {
 
   register: (data: RestaurantRequest): Promise<Restaurant> =>

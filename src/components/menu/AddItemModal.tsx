@@ -36,7 +36,7 @@ const AddItemModal = ({ isOpen, onClose, onSubmit, editItem, restaurantId }: Pro
 
   const [form, setForm] = useState(initialForm);
 
-  // Sync form when editItem changes
+ 
   const formData = editItem ? initialForm : form;
   const setFormData = (val: typeof defaultForm) => {
     if (!editItem) setForm(val);
@@ -61,7 +61,7 @@ const AddItemModal = ({ isOpen, onClose, onSubmit, editItem, restaurantId }: Pro
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
 
-        {/* Header */}
+        
         <div className="flex justify-between items-center p-6 border-b">
           <h2 className="text-xl font-bold text-gray-800">
             {editItem ? '✏️ Edit Item' : '➕ Add Menu Item'}
@@ -69,7 +69,7 @@ const AddItemModal = ({ isOpen, onClose, onSubmit, editItem, restaurantId }: Pro
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
         </div>
 
-        {/* Form */}
+       
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
 
           <div>

@@ -1,7 +1,7 @@
 import axiosInstance from './axiosConfig';
 import type { LoginRequest, LoginResponse, RefreshTokenResponse } from '../types/auth.types';
 
-// ─── Register Types ───
+
 export interface RegisterRequest {
   email: string;
   password: string;
@@ -17,7 +17,7 @@ export interface RegisterResponse {
   role: string;
 }
 
-// ─── Auth API ───
+
 export const authApi = {
 
   register: async (data: RegisterRequest): Promise<RegisterResponse> => {

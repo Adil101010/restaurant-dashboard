@@ -21,7 +21,6 @@ import EmptyState from '../components/common/EmptyState';
 import useDebounce from '../hooks/useDebounce';
 
 
-// ─── emptyForm ─────────────────────────────────────────────────
 const emptyForm = (): MenuItemRequest => ({
   restaurantId: 0,
   name: '',
@@ -39,13 +38,13 @@ const emptyForm = (): MenuItemRequest => ({
   isBestseller: false,
   isSpicy: false,
   spiceLevel: 0,
-  isOnOffer: false,      // ✅
+  isOnOffer: false,      
   discountPercent: 0,
   offerLabel: '',
 });
 
 
-// ─── MenuItemCard ───────────────────────────────────────────────
+
 const MenuItemCard = React.memo(({
   item, onEdit, onDelete, onToggle,
 }: {
@@ -54,7 +53,7 @@ const MenuItemCard = React.memo(({
   onDelete: (item: MenuItem) => void;
   onToggle: (item: MenuItem) => void;
 }) => {
-  const finalPrice = item.isOnOffer && item.discountPercent > 0   // ✅
+  const finalPrice = item.isOnOffer && item.discountPercent > 0   
     ? (item.discountedPrice > 0
         ? item.discountedPrice
         : item.price - (item.price * item.discountPercent) / 100)
@@ -77,7 +76,7 @@ const MenuItemCard = React.memo(({
           sx={{ objectFit: 'cover' }}
         />
 
-        {/* ── Badges: top-left ── */}
+       
         <Box sx={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
           {item.isBestseller && (
             <Chip label="Bestseller" size="small" icon={<Star sx={{ fontSize: 12 }} />}
@@ -91,7 +90,7 @@ const MenuItemCard = React.memo(({
             <Chip label="Spicy" size="small" icon={<LocalFireDepartment sx={{ fontSize: 12 }} />}
               sx={{ bgcolor: '#f44336', color: 'white', fontWeight: 700, fontSize: 10 }} />
           )}
-          {/* ✅ isOnOffer */}
+         
           {item.isOnOffer && item.discountPercent > 0 && (
             <Chip
               label={`${item.discountPercent}% OFF`}
@@ -101,7 +100,7 @@ const MenuItemCard = React.memo(({
           )}
         </Box>
 
-        {/* ── Availability toggle: top-right ── */}
+        
         <Box sx={{ position: 'absolute', top: 6, right: 6, bgcolor: 'rgba(255,255,255,0.9)', borderRadius: 2, px: 0.5 }}>
           <Switch size="small" checked={item.isAvailable ?? true}
             onChange={() => onToggle(item)} color="success" />
@@ -135,7 +134,7 @@ const MenuItemCard = React.memo(({
           </Box>
         </Box>
 
-        {/* ✅ isOnOffer */}
+       
         {item.isOnOffer && item.offerLabel && (
           <Typography variant="caption" sx={{ color: '#7B1FA2', fontWeight: 600, display: 'block', mb: 0.5 }}>
             🏷️ {item.offerLabel}
@@ -187,7 +186,7 @@ const MenuItemCard = React.memo(({
 });
 
 
-// ─── MenuItemDialog ─────────────────────────────────────────────
+
 const MenuItemDialog = ({
   open, onClose, onSave, initial, restaurantId,
 }: {
@@ -219,7 +218,7 @@ const MenuItemDialog = ({
         isBestseller: initial.isBestseller,
         isSpicy: initial.isSpicy,
         spiceLevel: initial.spiceLevel || 0,
-        isOnOffer: initial.isOnOffer || false,        // ✅
+        isOnOffer: initial.isOnOffer || false,        
         discountPercent: initial.discountPercent || 0,
         offerLabel: initial.offerLabel || '',
       });
@@ -234,7 +233,7 @@ const MenuItemDialog = ({
   const handleSave = async () => {
     if (!form.name.trim()) return toast.error('Item name is required');
     if (!form.price || form.price <= 0) return toast.error('Valid price is required');
-    if (form.isOnOffer && (!form.discountPercent || form.discountPercent <= 0))  // ✅
+    if (form.isOnOffer && (!form.discountPercent || form.discountPercent <= 0))  
       return toast.error('Discount % is required when offer is enabled');
     setSaving(true);
     try {
@@ -310,7 +309,7 @@ const MenuItemDialog = ({
               onChange={e => set('spiceLevel', parseInt(e.target.value))} />
           </Grid>
 
-          {/* ── Flags ── */}
+          
           <Grid size={{ xs: 12 }}>
             <Box display="flex" flexWrap="wrap" gap={1}>
               {([
@@ -328,7 +327,7 @@ const MenuItemDialog = ({
             </Box>
           </Grid>
 
-          {/* ── Offer / Discount Section ── */}
+         
           <Grid size={{ xs: 12 }}>
             <Divider sx={{ my: 0.5 }} />
             <Typography variant="subtitle2" fontWeight={700} color="text.secondary" mt={1} mb={0.5}>
@@ -341,9 +340,9 @@ const MenuItemDialog = ({
               control={
                 <Checkbox
                   size="small"
-                  checked={!!form.isOnOffer}                  // ✅
+                  checked={!!form.isOnOffer}                 
                   onChange={e => {
-                    set('isOnOffer', e.target.checked);       // ✅
+                    set('isOnOffer', e.target.checked);       
                     if (!e.target.checked) {
                       set('discountPercent', 0);
                       set('offerLabel', '');
@@ -361,13 +360,13 @@ const MenuItemDialog = ({
               label="Discount %"
               type="number"
               size="small"
-              disabled={!form.isOnOffer}                      // ✅
+              disabled={!form.isOnOffer}                      
               value={form.discountPercent || ''}
               inputProps={{ min: 1, max: 99 }}
               onChange={e => set('discountPercent', parseInt(e.target.value))}
               InputProps={{ endAdornment: <InputAdornment position="end">%</InputAdornment> }}
               helperText={
-                form.isOnOffer && form.discountPercent && form.price  // ✅
+                form.isOnOffer && form.discountPercent && form.price  
                   ? `Final: ${formatCurrency(form.price - (form.price * form.discountPercent) / 100)}`
                   : ' '
               }
@@ -379,7 +378,7 @@ const MenuItemDialog = ({
               fullWidth
               label="Offer Label"
               size="small"
-              disabled={!form.isOnOffer}                      // ✅
+              disabled={!form.isOnOffer}                      
               value={form.offerLabel || ''}
               placeholder="e.g. Weekend Special"
               onChange={e => set('offerLabel', e.target.value)}
@@ -400,7 +399,7 @@ const MenuItemDialog = ({
 };
 
 
-// ─── DeleteDialog ───────────────────────────────────────────────
+
 const DeleteDialog = ({
   item, onClose, onConfirm,
 }: { item: MenuItem | null; onClose: () => void; onConfirm: () => void }) => (
@@ -421,7 +420,7 @@ const DeleteDialog = ({
 );
 
 
-// ─── MenuPage ───────────────────────────────────────────────────
+
 const MenuPage = () => {
   const { user } = useAuth();
   const [items, setItems] = useState<MenuItem[]>([]);

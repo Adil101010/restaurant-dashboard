@@ -23,7 +23,7 @@ export interface MenuItem {
   createdAt: string;
   updatedAt: string;
 
-  isOnOffer: boolean;       // ✅ backend se match
+  isOnOffer: boolean;       
   discountPercent: number;
   offerLabel: string;
   discountedPrice: number;
@@ -53,7 +53,7 @@ export interface MenuItemRequest {
   isSpicy?: boolean;
   spiceLevel?: number;
 
-  isOnOffer?: boolean;      // ✅ backend se match
+  isOnOffer?: boolean;      
   discountPercent?: number;
   offerLabel?: string;
 }

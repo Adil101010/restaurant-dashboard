@@ -11,11 +11,11 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { restaurantApi, type Restaurant, type RestaurantRequest } from '../api/restaurantApi';
 
-// ─── Time helpers ──────────────────────────────────────────────
+
 const toInputTime = (t?: string) => t?.slice(0, 5) ?? '';
 const toApiTime  = (t: string)   => t ? `${t}:00` : undefined;
 
-// ─── Info Row ──────────────────────────────────────────────────
+
 const InfoRow = ({ icon, label, value }: { icon: React.ReactNode; label: string; value?: string | number }) => (
   <Box display="flex" alignItems="flex-start" gap={1.5} py={1}>
     <Box sx={{ color: '#FF6B35', mt: 0.2 }}>{icon}</Box>
@@ -26,7 +26,7 @@ const InfoRow = ({ icon, label, value }: { icon: React.ReactNode; label: string;
   </Box>
 );
 
-// ─── Main Page ─────────────────────────────────────────────────
+
 const ProfilePage = () => {
   const { user } = useAuth();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -112,7 +112,7 @@ const ProfilePage = () => {
 
   return (
     <Box>
-      {/* Header */}
+     
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box>
           <Typography variant="h5" fontWeight={700}>Restaurant Profile</Typography>
@@ -142,9 +142,9 @@ const ProfilePage = () => {
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
       <Grid container spacing={3}>
-        {/* ── Left Panel ── */}
+     
         <Grid size={{ xs: 12, md: 4 }}>
-          {/* Cover Card */}
+          
           <Card sx={{ borderRadius: 3, boxShadow: '0 2px 12px rgba(0,0,0,0.08)', mb: 3, overflow: 'hidden' }}>
             <Box sx={{
               height: 120, bgcolor: '#FF6B35',
@@ -186,7 +186,7 @@ const ProfilePage = () => {
             </CardContent>
           </Card>
 
-          {/* Stats Card */}
+        
           <Card sx={{ borderRadius: 3, boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
             <CardContent>
               <Typography variant="subtitle2" fontWeight={700} mb={2} color="text.secondary">
@@ -204,12 +204,12 @@ const ProfilePage = () => {
           </Card>
         </Grid>
 
-        {/* ── Right Panel ── */}
+        
         <Grid size={{ xs: 12, md: 8 }}>
           <Card sx={{ borderRadius: 3, boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
             <CardContent sx={{ p: 3 }}>
               {!isEditing ? (
-                /* VIEW MODE */
+              
                 <Box>
                   <Typography variant="subtitle1" fontWeight={700} mb={2}>Basic Information</Typography>
                   <Grid container spacing={2}>
@@ -263,7 +263,7 @@ const ProfilePage = () => {
                   </Grid>
                 </Box>
               ) : (
-                /* EDIT MODE */
+             
                 form && (
                   <Box>
                     <Typography variant="subtitle1" fontWeight={700} mb={2}>Basic Information</Typography>

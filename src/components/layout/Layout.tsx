@@ -29,7 +29,7 @@ const Layout = () => {
       duration: 5000,
       style: { fontWeight: 700 },
     });
-    // Orders page open hai toh refresh karo
+    
     if (location.pathname === '/orders' && ordersRefreshRef.current) {
       ordersRefreshRef.current();
     }

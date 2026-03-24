@@ -8,9 +8,9 @@ import ErrorBoundary from './components/common/ErrorBoundary';
 import OfflineBanner from './components/common/OfflineBanner';
 import { CircularProgress, Box } from '@mui/material';
 
-// ── Lazy Load — har page alag chunk ──
+
 const LoginPage      = lazy(() => import('./pages/LoginPage'));
-const SignupPage     = lazy(() => import('./pages/SignupPage'));   // ✅ lazy kiya
+const SignupPage     = lazy(() => import('./pages/SignupPage'));   
 const DashboardPage  = lazy(() => import('./pages/DashboardPage'));
 const MenuPage       = lazy(() => import('./pages/MenuPage'));
 const OrdersPage     = lazy(() => import('./pages/OrdersPage'));
@@ -41,11 +41,11 @@ function App() {
           <Suspense fallback={<PageLoader />}>
             <Routes>
 
-              {/* ── Public Routes — bina login ke accessible ── */}
+              
               <Route path="/login"  element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />  {/* ✅ bahar nikala */}
+              <Route path="/signup" element={<SignupPage />} />  
 
-              {/* ── Protected Routes — login ke baad ── */}
+              
               <Route element={<ProtectedRoute />}>
                 <Route element={<Layout />}>
                   <Route path="/"            element={<DashboardPage />} />
@@ -57,7 +57,7 @@ function App() {
                 </Route>
               </Route>
 
-              {/* ── Fallback ── */}
+              
               <Route path="*" element={<Navigate to="/" replace />} />
 
             </Routes>
