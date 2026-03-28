@@ -16,30 +16,41 @@ const Layout = () => {
   const { user } = useAuth();
   const location = useLocation();
 
-
   const ordersRefreshRef = useRef<(() => void) | null>(null);
 
   const registerRefresh = useCallback((cb: () => void) => {
     ordersRefreshRef.current = cb;
   }, []);
 
-
-  const handleNewOrder = useCallback(() => {
-    toast.success('🛒 New Order Received!', {
+  const handleNewOrder = useCallback((data: any) => {
+    toast.success(`🛒 New Order #${data?.orderId ?? ''} Received!`, {
       duration: 5000,
       style: { fontWeight: 700 },
     });
-    
-    if (location.pathname === '/orders' && ordersRefreshRef.current) {
-      ordersRefreshRef.current();
-    }
-  }, [location.pathname]);
+    // ✅ Har page pe refresh karo — sirf /orders nahi
+    ordersRefreshRef.current?.();
+  }, []);
 
-  const handleOrderUpdate = useCallback(() => {
-    if (location.pathname === '/orders' && ordersRefreshRef.current) {
-      ordersRefreshRef.current();
+  const handleOrderUpdate = useCallback((data: any) => {
+    const type = data?.type as string ?? '';
+    const orderId = data?.orderId ?? '';
+
+    // ✅ Status ke hisaab se toast dikhao
+    const toastMessages: Record<string, string> = {
+      PREPARING:        `🍳 Order #${orderId} — Preparing`,
+      OUT_FOR_DELIVERY: `🚴 Order #${orderId} — Out for Delivery`,
+      DELIVERED:        `✅ Order #${orderId} — Delivered`,
+      CONFIRMED:        `✅ Order #${orderId} — Confirmed`,
+      ORDER_CANCELLED:  `❌ Order #${orderId} — Cancelled`,
+    };
+
+    if (toastMessages[type]) {
+      toast(toastMessages[type], { duration: 4000 });
     }
-  }, [location.pathname]);
+
+    // ✅ Hamesha refresh karo — location check hataya
+    ordersRefreshRef.current?.();
+  }, []);
 
   useWebSocket({
     restaurantId: user?.restaurantId ?? null,
@@ -70,7 +81,6 @@ const Layout = () => {
         }}
       >
         <Toolbar />
-      
         <Outlet context={{ registerRefresh }} />
       </Box>
     </Box>

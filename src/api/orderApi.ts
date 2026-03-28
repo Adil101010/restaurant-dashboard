@@ -38,6 +38,10 @@ export interface OrderResponse {
   deliveredAt?: string;
   createdAt: string;
   updatedAt: string;
+  deliveryPartnerId?: number;
+  deliveryPartnerName?: string;
+  deliveryPartnerPhone?: string;
+  deliveryPartnerVehicle?: string;
 }
 
 export interface PageResponse<T> {

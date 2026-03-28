@@ -42,28 +42,48 @@ const NEXT_STATUSES: Partial<Record<OrderStatus, OrderStatus[]>> = {
   OUT_FOR_DELIVERY: ['DELIVERED'],
 };
 
+
+const PAYMENT_CONFIG: Record<string, { color: string; bg: string }> = {
+  PAID:     { color: '#1565C0', bg: '#E3F2FD' }, // blue — payment confirm
+  PENDING:  { color: '#78909C', bg: '#ECEFF1' }, // gray — waiting
+  FAILED:   { color: '#C62828', bg: '#FFEBEE' }, // red
+  REFUNDED: { color: '#6A1B9A', bg: '#F3E5F5' }, // purple
+};
+
 const StatusChip = React.memo(({ status }: { status: OrderStatus }) => {
   const cfg = STATUS_CONFIG[status];
   return (
     <Chip
       icon={<Box sx={{ color: `${cfg.color} !important`, display: 'flex' }}>{cfg.icon}</Box>}
-      label={cfg.label} size="small"
-      sx={{ bgcolor: cfg.bg, color: cfg.color, fontWeight: 600, fontSize: 11 }}
+      label={cfg.label}
+      size="small"
+      sx={{
+        bgcolor: cfg.bg,
+        color: cfg.color,
+        fontWeight: 600,
+        fontSize: 11,
+        px: 0.5,
+        '& .MuiChip-label': { px: 0.75 },
+      }}
     />
   );
 });
 
+
 const PaymentChip = React.memo(({ status }: { status: string }) => {
-  const map: Record<string, { color: string; bg: string }> = {
-    PAID:     { color: '#4CAF50', bg: '#E8F5E9' },
-    PENDING:  { color: '#FF9800', bg: '#FFF3E0' },
-    FAILED:   { color: '#f44336', bg: '#FFEBEE' },
-    REFUNDED: { color: '#9C27B0', bg: '#F3E5F5' },
-  };
-  const cfg = map[status] ?? { color: '#757575', bg: '#F5F5F5' };
+  const cfg = PAYMENT_CONFIG[status] ?? { color: '#757575', bg: '#F5F5F5' };
   return (
-    <Chip label={status} size="small"
-      sx={{ bgcolor: cfg.bg, color: cfg.color, fontWeight: 600, fontSize: 10 }} />
+    <Chip
+      label={status}
+      size="small"
+      sx={{
+        bgcolor: cfg.bg,
+        color: cfg.color,
+        fontWeight: 600,
+        fontSize: 10,
+        '& .MuiChip-label': { px: 0.75 },
+      }}
+    />
   );
 });
 
@@ -160,7 +180,7 @@ const OrderDetailDialog = ({
         <Box display="flex" gap={2} mt={2} p={1.5} sx={{ bgcolor: '#F8F8F8', borderRadius: 2 }}>
           <Box>
             <Typography variant="caption" color="text.secondary">Payment</Typography>
-            <Box><PaymentChip status={order.paymentStatus} /></Box>
+            <Box mt={0.5}><PaymentChip status={order.paymentStatus} /></Box>
           </Box>
           <Box>
             <Typography variant="caption" color="text.secondary">Method</Typography>
@@ -177,6 +197,38 @@ const OrderDetailDialog = ({
             </Box>
           )}
         </Box>
+
+       
+        {order.deliveryPartnerName && (
+          <>
+            <Divider sx={{ mb: 2, mt: 2 }} />
+            <Typography variant="subtitle2" fontWeight={700} mb={1} color="text.secondary">
+              DELIVERY PARTNER
+            </Typography>
+            <Box p={2} sx={{ bgcolor: '#FFF8E1', borderRadius: 2, border: '1px solid #FFE082' }}>
+              <Stack spacing={1}>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <DeliveryDining sx={{ color: '#F57C00', fontSize: 20 }} />
+                  <Typography variant="body2" fontWeight={700} color="#E65100">
+                    {order.deliveryPartnerName}
+                  </Typography>
+                </Box>
+                {order.deliveryPartnerPhone && (
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Typography variant="caption" color="text.secondary" sx={{ minWidth: 60 }}>Phone</Typography>
+                    <Typography variant="body2" fontWeight={600}>{order.deliveryPartnerPhone}</Typography>
+                  </Box>
+                )}
+                {order.deliveryPartnerVehicle && (
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Typography variant="caption" color="text.secondary" sx={{ minWidth: 60 }}>Vehicle</Typography>
+                    <Typography variant="body2" fontWeight={600}>{order.deliveryPartnerVehicle}</Typography>
+                  </Box>
+                )}
+              </Stack>
+            </Box>
+          </>
+        )}
       </DialogContent>
 
       {next.length > 0 ? (
@@ -207,15 +259,12 @@ const TAB_FILTERS: (OrderStatus | 'ALL')[] = [
   'ALL', 'PENDING', 'CONFIRMED', 'PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED',
 ];
 
-
 interface LayoutOutletContext {
   registerRefresh: (cb: () => void) => void;
 }
 
 const OrdersPage = () => {
   const { user } = useAuth();
-
- 
   const { registerRefresh } = useOutletContext<LayoutOutletContext>();
 
   const [orders, setOrders] = useState<OrderResponse[]>([]);
@@ -271,23 +320,15 @@ const OrdersPage = () => {
     }
   }, [restaurantId, currentPage, hasMore, isLoadingMore, isOnAllTab]);
 
- 
   useEffect(() => { fetchInitial(); }, [fetchInitial]);
+  useEffect(() => { registerRefresh(fetchInitial); }, [registerRefresh, fetchInitial]);
 
- 
-  useEffect(() => {
-    registerRefresh(fetchInitial);
-  }, [registerRefresh, fetchInitial]);
-
- 
   useEffect(() => {
     if (!hasMore || isLoading || !isOnAllTab) return;
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
     const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !isLoadingMore) fetchMore();
-      },
+      (entries) => { if (entries[0].isIntersecting && !isLoadingMore) fetchMore(); },
       { root: scrollBoxRef.current, threshold: 0.1, rootMargin: '100px' }
     );
     observer.observe(sentinel);
@@ -320,17 +361,38 @@ const OrdersPage = () => {
     }, {} as Record<string, number>),
   [orders]);
 
+ 
+  const formatDateTime = (iso: string) => {
+    const d = new Date(iso);
+    const time = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const date = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    return { time, date };
+  };
+
+  
+  const TABLE_HEADERS = ['Order ID', 'Customer', 'Items', 'Amount', 'Payment', 'Status', 'Driver', 'Time', 'Action'];
+
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    
       <Box sx={{ flexShrink: 0 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5}
           flexWrap="wrap" gap={2}>
           <Box>
-            <Typography variant="h5" fontWeight={700}>Orders</Typography>
+            <Typography variant="h5" fontWeight={800} color="text.primary">Orders</Typography>
             <Typography variant="body2" color="text.secondary">{totalElements} total orders</Typography>
           </Box>
-          <Button variant="outlined" startIcon={<Receipt />} onClick={fetchInitial}
-            sx={{ borderRadius: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<Receipt />}
+            onClick={fetchInitial}
+            sx={{
+              borderRadius: 2,
+              borderColor: '#FF6B35',
+              color: '#FF6B35',
+              fontWeight: 600,
+              '&:hover': { borderColor: '#e55a28', bgcolor: '#FFF3EC' },
+            }}>
             Refresh
           </Button>
         </Box>
@@ -342,72 +404,134 @@ const OrdersPage = () => {
           </Alert>
         )}
 
-        <Tabs value={tabIndex} onChange={(_, v) => setTabIndex(v)}
-          variant="scrollable" scrollButtons="auto"
+      
+        <Tabs
+          value={tabIndex}
+          onChange={(_, v) => setTabIndex(v)}
+          variant="scrollable"
+          scrollButtons="auto"
           sx={{
-            mb: 2, bgcolor: 'white', borderRadius: 2, px: 1,
+            mb: 2,
+            bgcolor: 'white',
+            borderRadius: 2,
+            px: 1,
             boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-            '& .MuiTab-root': { minHeight: 48, fontSize: 12, fontWeight: 600 },
-            '& .Mui-selected': { color: '#FF6B35 !important' },
-            '& .MuiTabs-indicator': { bgcolor: '#FF6B35' },
+            '& .MuiTab-root': {
+              minHeight: 48,
+              fontSize: 12,
+              fontWeight: 600,
+              color: '#78909C',
+              borderRadius: 1.5,
+              mx: 0.25,
+              transition: 'all 0.2s',
+              '&:hover': {
+                bgcolor: '#FFF3EC',
+                color: '#FF6B35',
+              },
+            },
+            '& .Mui-selected': {
+              color: '#FF6B35 !important',
+              fontWeight: 700,
+              bgcolor: '#FFF3EC',
+            },
+            '& .MuiTabs-indicator': {
+              bgcolor: '#FF6B35',
+              height: 3,
+              borderRadius: 2,
+            },
           }}>
           {TAB_FILTERS.map((f, i) => (
             <Tab key={f} label={
-              <Box display="flex" alignItems="center" gap={0.5}>
+              <Box display="flex" alignItems="center" gap={0.75}>
                 {f === 'ALL' ? 'All' : STATUS_CONFIG[f].label}
                 {tabCounts[f] > 0 && (
-                  <Chip label={tabCounts[f]} size="small"
+                  <Chip
+                    label={tabCounts[f]}
+                    size="small"
                     sx={{
-                      height: 18, fontSize: 10,
-                      bgcolor: tabIndex === i ? '#FF6B35' : '#f0f0f0',
-                      color: tabIndex === i ? 'white' : 'text.secondary',
-                    }} />
+                      height: 18,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      bgcolor: tabIndex === i ? '#FF6B35' : '#EEEEEE',
+                      color: tabIndex === i ? 'white' : '#757575',
+                      '& .MuiChip-label': { px: 0.75 },
+                    }}
+                  />
                 )}
               </Box>
             } />
           ))}
         </Tabs>
 
+       
         <Box mb={2}>
-          <TextField size="small"
+          <TextField
+            size="small"
             placeholder="Search by order ID, customer name, phone..."
-            value={search} onChange={e => setSearch(e.target.value)}
-            sx={{ width: { xs: '100%', sm: 360 }, bgcolor: 'white', borderRadius: 2 }}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            sx={{
+              width: { xs: '100%', sm: 440 },
+              bgcolor: 'white',
+              borderRadius: 2,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                '&:hover fieldset': { borderColor: '#FF6B35' },
+                '&.Mui-focused fieldset': { borderColor: '#FF6B35' },
+              },
+            }}
             InputProps={{
               startAdornment: (
-                <InputAdornment position="start"><Search fontSize="small" /></InputAdornment>
+                <InputAdornment position="start">
+                  <Search fontSize="small" sx={{ color: '#9E9E9E' }} />
+                </InputAdornment>
               ),
-            }} />
+            }}
+          />
         </Box>
       </Box>
 
       <Box ref={scrollBoxRef} sx={{ flexGrow: 1, overflow: 'auto', minHeight: 0 }}>
-        <TableContainer component={Paper}
+        <TableContainer
+          component={Paper}
           sx={{ borderRadius: 3, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
           <Table stickyHeader>
+         
             <TableHead>
               <TableRow>
-                {['Order ID', 'Customer', 'Items', 'Amount', 'Payment', 'Status', 'Time', 'Action']
-                  .map(h => (
-                    <TableCell key={h}
-                      sx={{ fontWeight: 700, fontSize: 12, color: 'text.secondary', bgcolor: '#FAFAFA' }}>
-                      {h}
-                    </TableCell>
-                  ))}
+                {TABLE_HEADERS.map(h => (
+                  <TableCell
+                    key={h}
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: 11,
+                      color: '#78909C',
+                      bgcolor: '#FAFAFA',
+                      letterSpacing: '0.05em',
+                      textTransform: 'uppercase',
+                      py: 1.5,
+                      whiteSpace: 'nowrap',
+                    }}>
+                    {h}
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
+
             <TableBody>
               {isLoading ? (
+             
                 Array.from({ length: 6 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 8 }).map((_, j) => (
-                      <TableCell key={j}><Skeleton height={24} /></TableCell>
+                    {Array.from({ length: 9 }).map((_, j) => (
+                      <TableCell key={j}><Skeleton height={24} sx={{ borderRadius: 1 }} /></TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : filtered.length === 0 ? (
+               
                 <TableRow>
-                  <TableCell colSpan={8} sx={{ border: 0 }}>
+                  <TableCell colSpan={9} sx={{ border: 0 }}>
                     <EmptyState
                       type={debouncedSearch ? 'search' : 'orders'}
                       description={
@@ -422,74 +546,123 @@ const OrdersPage = () => {
                 </TableRow>
               ) : (
                 <>
-                  {filtered.map(order => (
-                    <TableRow key={order.id} hover
-                      sx={{ '&:hover': { bgcolor: '#FFF9F6' }, cursor: 'pointer' }}
-                      onClick={() => setSelectedOrder(order)}>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={700} color="primary.main">
-                          #{order.id}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={600}>{order.customerName}</Typography>
-                        <Typography variant="caption" color="text.secondary">{order.customerPhone}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {order.items?.length ?? 0} item{(order.items?.length ?? 0) !== 1 ? 's' : ''}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" noWrap
-                          sx={{ maxWidth: 140, display: 'block' }}>
-                          {order.items?.slice(0, 2).map(i => i.menuItemName).join(', ')}
-                          {(order.items?.length ?? 0) > 2 ? '...' : ''}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={700}>
-                          {formatCurrency(order.totalAmount)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell><PaymentChip status={order.paymentStatus} /></TableCell>
-                      <TableCell><StatusChip status={order.orderStatus} /></TableCell>
-                      <TableCell>
-                        <Box display="flex" alignItems="center" gap={0.5}>
-                          <AccessTime sx={{ fontSize: 13, color: 'text.secondary' }} />
-                          <Typography variant="caption" color="text.secondary">
-                            {new Date(order.createdAt).toLocaleTimeString('en-IN', {
-                              hour: '2-digit', minute: '2-digit',
-                            })}
+                  {filtered.map(order => {
+                    const { time, date } = formatDateTime(order.createdAt);
+                    return (
+                      <TableRow
+                        key={order.id}
+                        hover
+                        sx={{
+                          '&:hover': { bgcolor: '#FFF9F6' },
+                          cursor: 'pointer',
+                          transition: 'background 0.15s',
+                        }}
+                        onClick={() => setSelectedOrder(order)}>
+
+                        {/* Order ID */}
+                        <TableCell sx={{ py: 1.5 }}>
+                          <Typography variant="body2" fontWeight={700} color="#FF6B35">
+                            #{order.id}
                           </Typography>
-                        </Box>
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          {new Date(order.createdAt).toLocaleDateString('en-IN')}
-                        </Typography>
-                      </TableCell>
-                      <TableCell onClick={e => e.stopPropagation()}>
-                        <Box display="flex" gap={0.5}>
-                          <Tooltip title="View Details">
-                            <IconButton size="small" onClick={() => setSelectedOrder(order)}
-                              sx={{ bgcolor: '#F5F5F5', '&:hover': { bgcolor: '#E3F2FD' } }}>
-                              <Visibility fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          {NEXT_STATUSES[order.orderStatus]?.includes('CANCELLED') && (
-                            <Tooltip title="Cancel Order">
-                              <IconButton size="small"
-                                onClick={async () => handleStatusUpdate(order.id, 'CANCELLED')}
-                                sx={{ bgcolor: '#F5F5F5', '&:hover': { bgcolor: '#FFEBEE' } }}>
-                                <Cancel fontSize="small" color="error" />
+                        </TableCell>
+
+                        {/* Customer */}
+                        <TableCell sx={{ py: 1.5 }}>
+                          <Typography variant="body2" fontWeight={600} noWrap>{order.customerName}</Typography>
+                          <Typography variant="caption" color="text.secondary">{order.customerPhone}</Typography>
+                        </TableCell>
+
+                        {/* Items */}
+                        <TableCell sx={{ py: 1.5 }}>
+                          <Typography variant="body2">
+                            {order.items?.length ?? 0} item{(order.items?.length ?? 0) !== 1 ? 's' : ''}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" noWrap
+                            sx={{ maxWidth: 130, display: 'block' }}>
+                            {order.items?.slice(0, 2).map(i => i.menuItemName).join(', ')}
+                            {(order.items?.length ?? 0) > 2 ? '...' : ''}
+                          </Typography>
+                        </TableCell>
+
+                        {/* Amount */}
+                        <TableCell sx={{ py: 1.5 }}>
+                          <Typography variant="body2" fontWeight={700}>
+                            {formatCurrency(order.totalAmount)}
+                          </Typography>
+                        </TableCell>
+
+                       
+                        <TableCell sx={{ py: 1.5 }}>
+                          <PaymentChip status={order.paymentStatus} />
+                        </TableCell>
+
+                        
+                        <TableCell sx={{ py: 1.5 }}>
+                          <StatusChip status={order.orderStatus} />
+                        </TableCell>
+
+                 
+                        <TableCell sx={{ py: 1.5 }}>
+                          {order.deliveryPartnerName ? (
+                            <Box display="flex" alignItems="center" gap={0.5}>
+                              <DeliveryDining sx={{ fontSize: 14, color: '#F57C00' }} />
+                              <Typography variant="caption" fontWeight={600} color="#E65100" noWrap>
+                                {order.deliveryPartnerName}
+                              </Typography>
+                            </Box>
+                          ) : (
+                            <Typography variant="caption" color="text.disabled">—</Typography>
+                          )}
+                        </TableCell>
+
+                       
+                        <TableCell sx={{ py: 1.5 }}>
+                          <Typography variant="caption" fontWeight={700} color="text.primary" display="block">
+                            {time}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {date}
+                          </Typography>
+                        </TableCell>
+
+                       
+                        <TableCell sx={{ py: 1.5 }} onClick={e => e.stopPropagation()}>
+                          <Box display="flex" gap={0.5}>
+                            <Tooltip title="View Order Details" arrow>
+                              <IconButton
+                                size="small"
+                                onClick={() => setSelectedOrder(order)}
+                                sx={{
+                                  bgcolor: '#F5F5F5',
+                                  borderRadius: 1.5,
+                                  '&:hover': { bgcolor: '#FFF3EC', color: '#FF6B35' },
+                                }}>
+                                <Visibility fontSize="small" />
                               </IconButton>
                             </Tooltip>
-                          )}
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                            {NEXT_STATUSES[order.orderStatus]?.includes('CANCELLED') && (
+                              <Tooltip title="Cancel Order" arrow>
+                                <IconButton
+                                  size="small"
+                                  onClick={async () => handleStatusUpdate(order.id, 'CANCELLED')}
+                                  sx={{
+                                    bgcolor: '#F5F5F5',
+                                    borderRadius: 1.5,
+                                    '&:hover': { bgcolor: '#FFEBEE' },
+                                  }}>
+                                  <Cancel fontSize="small" color="error" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
 
                   {hasMore && isOnAllTab && (
                     <TableRow>
-                      <TableCell colSpan={8} sx={{ border: 0, p: 0 }}>
+                      <TableCell colSpan={9} sx={{ border: 0, p: 0 }}>
                         <div ref={sentinelRef} style={{ height: 20 }} />
                       </TableCell>
                     </TableRow>
@@ -510,7 +683,7 @@ const OrdersPage = () => {
         {!hasMore && orders.length > 0 && !isLoading && isOnAllTab && (
           <Box textAlign="center" py={2}>
             <Typography variant="caption" color="text.secondary">
-              {totalElements} orders loaded
+              All {totalElements} orders loaded
             </Typography>
           </Box>
         )}
