@@ -1,5 +1,3 @@
-
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { AuthUser, LoginRequest } from '../types/auth.types';
@@ -22,23 +20,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const storedUser = localStorage.getItem('authUser');
     const accessToken = localStorage.getItem('accessToken');
+
     if (storedUser && accessToken) {
       try {
         setUser(JSON.parse(storedUser));
       } catch {
-        localStorage.clear();
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('authUser');
       }
     }
+
     setIsLoading(false);
   }, []);
 
   const login = async (credentials: LoginRequest): Promise<void> => {
-    const response = await authApi.login(credentials);
+    const payload: LoginRequest = {
+      emailOrPhone: credentials.emailOrPhone.trim(),
+      password: credentials.password.trim(),
+    };
+
+    const response = await authApi.login(payload);
+
+    if (!response.restaurantId) {
+      throw new Error('No restaurant linked to this account. Please contact support.');
+    }
+
     const authUser: AuthUser = {
+      userId: response.userId,
       restaurantId: response.restaurantId,
       restaurantName: response.restaurantName,
       email: response.email,
     };
+
     localStorage.setItem('accessToken', response.accessToken);
     localStorage.setItem('refreshToken', response.refreshToken);
     localStorage.setItem('authUser', JSON.stringify(authUser));
@@ -49,12 +63,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await authApi.logout();
     } finally {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('authUser');
       setUser(null);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        isLoading,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

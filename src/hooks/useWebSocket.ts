@@ -32,7 +32,7 @@ export const useWebSocket = ({ restaurantId, onNewOrder, onOrderUpdate }: UseWeb
     console.log('🔌 Connecting WebSocket for restaurantId:', restaurantId);
 
     const client = new Client({
-      brokerURL: 'ws://192.168.0.104:8085/ws',
+      brokerURL: 'ws://192.168.1.60:8085/ws',
       reconnectDelay: 5000,
 
       onConnect: () => {

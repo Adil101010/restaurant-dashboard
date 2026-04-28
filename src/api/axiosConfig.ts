@@ -2,9 +2,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 
-
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: BASE_URL,
@@ -14,20 +12,37 @@ const axiosInstance: AxiosInstance = axios.create({
   },
 });
 
+const AUTH_EXCLUDED_PATHS = [
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/restaurant/login',
+  '/api/auth/delivery/login',
+  '/api/auth/refresh-token',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
+  '/api/auth/send-email-otp',
+  '/api/auth/send-phone-otp',
+  '/api/auth/verify-otp',
+];
 
+const isAuthExcluded = (url?: string) => {
+  if (!url) return false;
+  return AUTH_EXCLUDED_PATHS.some((path) => url.includes(path));
+};
 
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('accessToken');
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (!isAuthExcluded(config.url)) {
+      const token = localStorage.getItem('accessToken');
+      if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
+
     return config;
   },
   (error: AxiosError) => Promise.reject(error)
 );
-
-
 
 let isRefreshing = false;
 let failedQueue: {
@@ -35,19 +50,13 @@ let failedQueue: {
   reject: (reason?: unknown) => void;
 }[] = [];
 
-
 const processQueue = (error: AxiosError | null, token: string | null = null) => {
   failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
+    if (error) prom.reject(error);
+    else prom.resolve(token);
   });
   failedQueue = [];
 };
-
-
 
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse) => response,
@@ -56,14 +65,21 @@ axiosInstance.interceptors.response.use(
       _retry?: boolean;
     };
 
-   
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
+    if (isAuthExcluded(originalRequest.url)) {
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
           .then((token) => {
-            if (originalRequest.headers) {
+            if (originalRequest.headers && token) {
               originalRequest.headers.Authorization = `Bearer ${token}`;
             }
             return axiosInstance(originalRequest);
@@ -77,7 +93,9 @@ axiosInstance.interceptors.response.use(
       const refreshToken = localStorage.getItem('refreshToken');
 
       if (!refreshToken) {
-        localStorage.clear();
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('authUser');
         toast.error('Session expired. Please login again.');
         window.location.href = '/login';
         return Promise.reject(error);
@@ -88,7 +106,11 @@ axiosInstance.interceptors.response.use(
           refreshToken,
         });
 
-        const { accessToken, refreshToken: newRefreshToken } = response.data;
+        const { accessToken, refreshToken: newRefreshToken } = response.data as {
+          accessToken: string;
+          refreshToken: string;
+        };
+
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', newRefreshToken);
 
@@ -101,8 +123,10 @@ axiosInstance.interceptors.response.use(
         return axiosInstance(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError as AxiosError, null);
-        localStorage.clear();
-        toast.error('Session expired. Please login again.'); 
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('authUser');
+        toast.error('Session expired. Please login again.');
         window.location.href = '/login';
         return Promise.reject(refreshError);
       } finally {
@@ -110,16 +134,16 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-    
     const status = error.response?.status;
-    const message = (error.response?.data as { message?: string })?.message;
+    const message = (error.response?.data as { message?: string; error?: string })?.message
+      || (error.response?.data as { message?: string; error?: string })?.error;
 
     if (status === 403) {
-      toast.error('Access denied. You do not have permission.');
+      toast.error(message || 'Access denied. You do not have permission.');
     } else if (status === 404) {
       toast.error(message || 'Resource not found.');
     } else if (status === 500) {
-      toast.error('Server error. Please try again later.');
+      toast.error(message || 'Server error. Please try again later.');
     } else if (!error.response) {
       toast.error('Network error. Check your connection.');
     }
@@ -127,6 +151,5 @@ axiosInstance.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
 
 export default axiosInstance;

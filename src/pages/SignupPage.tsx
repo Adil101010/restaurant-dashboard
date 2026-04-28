@@ -5,12 +5,12 @@ import toast from 'react-hot-toast';
 import {
   Box, Card, CardContent, TextField, Button, Typography,
   InputAdornment, IconButton, CircularProgress, Alert,
-  Grid, MenuItem, Stepper, Step, StepLabel,
+  MenuItem, Stepper, Step, StepLabel,
 } from '@mui/material';
+import { Grid } from '@mui/material';
 import { Visibility, VisibilityOff, Restaurant } from '@mui/icons-material';
 import { authApi } from '../api/authApi';
 import { restaurantApi } from '../api/restaurantApi';
-
 
 const CUISINE_TYPES = [
   'North Indian', 'South Indian', 'Chinese', 'Italian',
@@ -28,7 +28,6 @@ const INDIAN_STATES = [
 ];
 
 const steps = ['Owner Details', 'Restaurant Info', 'Timings & Extras'];
-
 
 interface SignupFormData {
   email: string;
@@ -48,7 +47,6 @@ interface SignupFormData {
   minOrderAmount: string;
   avgDeliveryTime: string;
 }
-
 
 const SignupPage = () => {
   const [activeStep, setActiveStep] = useState(0);
@@ -101,15 +99,14 @@ const SignupPage = () => {
     setIsSubmitting(true);
 
     try {
-   
       const authResponse = await authApi.register({
+        name: data.restaurantName,
         email: data.email,
         password: data.password,
         phone: data.phone,
         role: 'RESTAURANT_OWNER',
       });
 
-      
       await restaurantApi.register({
         ownerId: authResponse.userId,
         name: data.restaurantName,
@@ -130,13 +127,11 @@ const SignupPage = () => {
 
       toast.success('Restaurant registered successfully! Please login.');
       navigate('/login');
-
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
       const message = err?.response?.data?.message || 'Registration failed. Please try again.';
       setApiError(message);
       toast.error(message);
-      
       setActiveStep(0);
     } finally {
       setIsSubmitting(false);
@@ -155,8 +150,6 @@ const SignupPage = () => {
     }}>
       <Card sx={{ maxWidth: 620, width: '100%', borderRadius: 3, boxShadow: 8 }}>
         <CardContent sx={{ p: 4 }}>
-
-         
           <Box textAlign="center" mb={3}>
             <Box sx={{
               bgcolor: 'primary.main', borderRadius: '50%',
@@ -173,7 +166,6 @@ const SignupPage = () => {
             </Typography>
           </Box>
 
-         
           <Stepper activeStep={activeStep} sx={{ mb: 3 }}>
             {steps.map((label) => (
               <Step key={label}>
@@ -189,13 +181,12 @@ const SignupPage = () => {
           )}
 
           <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
-
-           
             {activeStep === 0 && (
               <Grid container spacing={2}>
-
-                <Grid item xs={12}>
-                  <Controller name="email" control={control}
+                <Grid size={12}>
+                  <Controller
+                    name="email"
+                    control={control}
                     rules={{
                       required: 'Email is required',
                       pattern: {
@@ -204,14 +195,23 @@ const SignupPage = () => {
                       },
                     }}
                     render={({ field }) => (
-                      <TextField {...field} label="Email Address" type="email"
-                        fullWidth autoFocus
-                        error={!!errors.email} helperText={errors.email?.message} />
-                    )} />
+                      <TextField
+                        {...field}
+                        label="Email Address"
+                        type="email"
+                        fullWidth
+                        autoFocus
+                        error={!!errors.email}
+                        helperText={errors.email?.message}
+                      />
+                    )}
+                  />
                 </Grid>
 
-                <Grid item xs={12}>
-                  <Controller name="phone" control={control}
+                <Grid size={12}>
+                  <Controller
+                    name="phone"
+                    control={control}
                     rules={{
                       required: 'Phone number required',
                       pattern: {
@@ -220,19 +220,27 @@ const SignupPage = () => {
                       },
                     }}
                     render={({ field }) => (
-                      <TextField {...field} label="Phone Number" fullWidth
-                        error={!!errors.phone} helperText={errors.phone?.message}
+                      <TextField
+                        {...field}
+                        label="Phone Number"
+                        fullWidth
+                        error={!!errors.phone}
+                        helperText={errors.phone?.message}
                         inputProps={{ maxLength: 10 }}
                         InputProps={{
                           startAdornment: (
                             <InputAdornment position="start">+91</InputAdornment>
                           ),
-                        }} />
-                    )} />
+                        }}
+                      />
+                    )}
+                  />
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
-                  <Controller name="password" control={control}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Controller
+                    name="password"
+                    control={control}
                     rules={{
                       required: 'Password required',
                       pattern: {
@@ -241,9 +249,13 @@ const SignupPage = () => {
                       },
                     }}
                     render={({ field }) => (
-                      <TextField {...field} label="Password"
-                        type={showPassword ? 'text' : 'password'} fullWidth
-                        error={!!errors.password} helperText={errors.password?.message}
+                      <TextField
+                        {...field}
+                        label="Password"
+                        type={showPassword ? 'text' : 'password'}
+                        fullWidth
+                        error={!!errors.password}
+                        helperText={errors.password?.message}
                         InputProps={{
                           endAdornment: (
                             <InputAdornment position="end">
@@ -252,20 +264,28 @@ const SignupPage = () => {
                               </IconButton>
                             </InputAdornment>
                           ),
-                        }} />
-                    )} />
+                        }}
+                      />
+                    )}
+                  />
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
-                  <Controller name="confirmPassword" control={control}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Controller
+                    name="confirmPassword"
+                    control={control}
                     rules={{
                       required: 'Please confirm your password',
                       validate: (v) => v === password || 'Passwords do not match',
                     }}
                     render={({ field }) => (
-                      <TextField {...field} label="Confirm Password"
-                        type={showConfirmPassword ? 'text' : 'password'} fullWidth
-                        error={!!errors.confirmPassword} helperText={errors.confirmPassword?.message}
+                      <TextField
+                        {...field}
+                        label="Confirm Password"
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        fullWidth
+                        error={!!errors.confirmPassword}
+                        helperText={errors.confirmPassword?.message}
                         InputProps={{
                           endAdornment: (
                             <InputAdornment position="end">
@@ -274,152 +294,241 @@ const SignupPage = () => {
                               </IconButton>
                             </InputAdornment>
                           ),
-                        }} />
-                    )} />
+                        }}
+                      />
+                    )}
+                  />
                 </Grid>
-
               </Grid>
             )}
 
-           
             {activeStep === 1 && (
               <Grid container spacing={2}>
-
-                <Grid item xs={12} sm={6}>
-                  <Controller name="restaurantName" control={control}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Controller
+                    name="restaurantName"
+                    control={control}
                     rules={{ required: 'Restaurant name required' }}
                     render={({ field }) => (
-                      <TextField {...field} label="Restaurant Name" fullWidth autoFocus
-                        error={!!errors.restaurantName} helperText={errors.restaurantName?.message} />
-                    )} />
+                      <TextField
+                        {...field}
+                        label="Restaurant Name"
+                        fullWidth
+                        autoFocus
+                        error={!!errors.restaurantName}
+                        helperText={errors.restaurantName?.message}
+                      />
+                    )}
+                  />
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
-                  <Controller name="cuisine" control={control}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Controller
+                    name="cuisine"
+                    control={control}
                     rules={{ required: 'Cuisine type required' }}
                     render={({ field }) => (
-                      <TextField {...field} label="Cuisine Type" select fullWidth
-                        error={!!errors.cuisine} helperText={errors.cuisine?.message}>
+                      <TextField
+                        {...field}
+                        label="Cuisine Type"
+                        select
+                        fullWidth
+                        error={!!errors.cuisine}
+                        helperText={errors.cuisine?.message}
+                      >
                         {CUISINE_TYPES.map((c) => (
                           <MenuItem key={c} value={c}>{c}</MenuItem>
                         ))}
                       </TextField>
-                    )} />
+                    )}
+                  />
                 </Grid>
 
-                <Grid item xs={12}>
-                  <Controller name="description" control={control}
+                <Grid size={12}>
+                  <Controller
+                    name="description"
+                    control={control}
                     render={({ field }) => (
-                      <TextField {...field} label="Description (optional)"
-                        fullWidth multiline rows={2} />
-                    )} />
+                      <TextField {...field} label="Description (optional)" fullWidth multiline rows={2} />
+                    )}
+                  />
                 </Grid>
 
-                <Grid item xs={12}>
-                  <Controller name="address" control={control}
+                <Grid size={12}>
+                  <Controller
+                    name="address"
+                    control={control}
                     rules={{ required: 'Address required' }}
                     render={({ field }) => (
-                      <TextField {...field} label="Full Address" fullWidth
-                        error={!!errors.address} helperText={errors.address?.message} />
-                    )} />
+                      <TextField
+                        {...field}
+                        label="Full Address"
+                        fullWidth
+                        error={!!errors.address}
+                        helperText={errors.address?.message}
+                      />
+                    )}
+                  />
                 </Grid>
 
-                <Grid item xs={12} sm={4}>
-                  <Controller name="city" control={control}
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Controller
+                    name="city"
+                    control={control}
                     rules={{ required: 'City required' }}
                     render={({ field }) => (
-                      <TextField {...field} label="City" fullWidth
-                        error={!!errors.city} helperText={errors.city?.message} />
-                    )} />
+                      <TextField
+                        {...field}
+                        label="City"
+                        fullWidth
+                        error={!!errors.city}
+                        helperText={errors.city?.message}
+                      />
+                    )}
+                  />
                 </Grid>
 
-                <Grid item xs={12} sm={4}>
-                  <Controller name="state" control={control}
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Controller
+                    name="state"
+                    control={control}
                     rules={{ required: 'State required' }}
                     render={({ field }) => (
-                      <TextField {...field} label="State" select fullWidth
-                        error={!!errors.state} helperText={errors.state?.message}>
+                      <TextField
+                        {...field}
+                        label="State"
+                        select
+                        fullWidth
+                        error={!!errors.state}
+                        helperText={errors.state?.message}
+                      >
                         {INDIAN_STATES.map((s) => (
                           <MenuItem key={s} value={s}>{s}</MenuItem>
                         ))}
                       </TextField>
-                    )} />
+                    )}
+                  />
                 </Grid>
 
-                <Grid item xs={12} sm={4}>
-                  <Controller name="pincode" control={control}
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Controller
+                    name="pincode"
+                    control={control}
                     rules={{
                       required: 'Pincode required',
                       pattern: { value: /^\d{6}$/, message: '6 digit pincode chahiye' },
                     }}
                     render={({ field }) => (
-                      <TextField {...field} label="Pincode" fullWidth
-                        error={!!errors.pincode} helperText={errors.pincode?.message}
-                        inputProps={{ maxLength: 6 }} />
-                    )} />
+                      <TextField
+                        {...field}
+                        label="Pincode"
+                        fullWidth
+                        error={!!errors.pincode}
+                        helperText={errors.pincode?.message}
+                        inputProps={{ maxLength: 6 }}
+                      />
+                    )}
+                  />
                 </Grid>
-
               </Grid>
             )}
 
-            
             {activeStep === 2 && (
               <Grid container spacing={2}>
-
-                <Grid item xs={12} sm={6}>
-                  <Controller name="openingTime" control={control}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Controller
+                    name="openingTime"
+                    control={control}
                     rules={{ required: 'Opening time required' }}
                     render={({ field }) => (
-                      <TextField {...field} label="Opening Time" type="time"
-                        fullWidth InputLabelProps={{ shrink: true }}
-                        error={!!errors.openingTime} helperText={errors.openingTime?.message} />
-                    )} />
+                      <TextField
+                        {...field}
+                        label="Opening Time"
+                        type="time"
+                        fullWidth
+                        InputLabelProps={{ shrink: true }}
+                        error={!!errors.openingTime}
+                        helperText={errors.openingTime?.message}
+                      />
+                    )}
+                  />
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
-                  <Controller name="closingTime" control={control}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Controller
+                    name="closingTime"
+                    control={control}
                     rules={{ required: 'Closing time required' }}
                     render={({ field }) => (
-                      <TextField {...field} label="Closing Time" type="time"
-                        fullWidth InputLabelProps={{ shrink: true }}
-                        error={!!errors.closingTime} helperText={errors.closingTime?.message} />
-                    )} />
+                      <TextField
+                        {...field}
+                        label="Closing Time"
+                        type="time"
+                        fullWidth
+                        InputLabelProps={{ shrink: true }}
+                        error={!!errors.closingTime}
+                        helperText={errors.closingTime?.message}
+                      />
+                    )}
+                  />
                 </Grid>
 
-                <Grid item xs={12} sm={4}>
-                  <Controller name="deliveryFee" control={control}
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Controller
+                    name="deliveryFee"
+                    control={control}
                     render={({ field }) => (
-                      <TextField {...field} label="Delivery Fee" type="number" fullWidth
+                      <TextField
+                        {...field}
+                        label="Delivery Fee"
+                        type="number"
+                        fullWidth
                         InputProps={{
                           startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                        }} />
-                    )} />
+                        }}
+                      />
+                    )}
+                  />
                 </Grid>
 
-                <Grid item xs={12} sm={4}>
-                  <Controller name="minOrderAmount" control={control}
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Controller
+                    name="minOrderAmount"
+                    control={control}
                     render={({ field }) => (
-                      <TextField {...field} label="Min Order Amount" type="number" fullWidth
+                      <TextField
+                        {...field}
+                        label="Min Order Amount"
+                        type="number"
+                        fullWidth
                         InputProps={{
                           startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                        }} />
-                    )} />
+                        }}
+                      />
+                    )}
+                  />
                 </Grid>
 
-                <Grid item xs={12} sm={4}>
-                  <Controller name="avgDeliveryTime" control={control}
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Controller
+                    name="avgDeliveryTime"
+                    control={control}
                     render={({ field }) => (
-                      <TextField {...field} label="Avg Delivery Time" type="number" fullWidth
+                      <TextField
+                        {...field}
+                        label="Avg Delivery Time"
+                        type="number"
+                        fullWidth
                         InputProps={{
                           endAdornment: <InputAdornment position="end">min</InputAdornment>,
-                        }} />
-                    )} />
+                        }}
+                      />
+                    )}
+                  />
                 </Grid>
-
               </Grid>
             )}
 
-          
             <Box display="flex" justifyContent="space-between" mt={3}>
               <Button
                 variant="outlined"
@@ -460,17 +569,14 @@ const SignupPage = () => {
                 </Button>
               )}
             </Box>
-
           </Box>
 
-         
           <Typography variant="body2" color="text.secondary" textAlign="center" mt={2}>
             Already have an account?{' '}
             <Link to="/login" style={{ color: '#FF6B35', fontWeight: 600, textDecoration: 'none' }}>
               Sign In
             </Link>
           </Typography>
-
         </CardContent>
       </Card>
     </Box>

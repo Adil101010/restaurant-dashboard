@@ -1,6 +1,5 @@
 import api from './axiosConfig';
 
-
 export interface Restaurant {
   id: number;
   ownerId: number;
@@ -46,15 +45,20 @@ export interface RestaurantRequest {
   avgDeliveryTime?: number;
 }
 
-
 export const restaurantApi = {
 
   register: (data: RestaurantRequest): Promise<Restaurant> =>
-    api.post<Restaurant>('/api/restaurants/register', data).then(r => r.data),
+    api
+      .post<Restaurant>('/api/restaurants/register', data)
+      .then(r => r.data),        
 
   getById: (id: number): Promise<Restaurant> =>
-    api.get<Restaurant>(`/api/restaurants/${id}`).then(r => r.data),
+    api
+      .get<Restaurant>(`/api/restaurants/${id}`)
+      .then(r => r.data),      
 
   update: (id: number, data: RestaurantRequest): Promise<Restaurant> =>
-    api.put<Restaurant>(`/api/restaurants/${id}`, data).then(r => r.data),
+    api
+      .put<Restaurant>(`/api/restaurants/${id}`, data)
+      .then(r => r.data),      
 };

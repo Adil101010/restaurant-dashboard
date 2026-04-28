@@ -30,22 +30,32 @@ const LoginPage = () => {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    setApiError('');
-    try {
-      await login({
-        emailOrPhone: data.emailOrPhone,
-        password: data.password,
-        expectedRole: 'RESTAURANT_OWNER',
-      });
-      toast.success('Login successful! Welcome back');
-      navigate('/');
-    } catch (error: unknown) {
-      const err = error as { response?: { data?: { message?: string } } };
-      const message = err?.response?.data?.message || 'Invalid credentials. Please try again.';
-      setApiError(message);
-      toast.error(message);
-    }
-  };
+  setApiError('');
+  try {
+    await login({
+      emailOrPhone: data.emailOrPhone,
+      password: data.password,
+    });
+
+    toast.success('Login successful! Welcome back');
+    navigate('/', { replace: true });
+  } catch (error: unknown) {
+    console.error('LOGIN ERROR:', error);
+
+    const err = error as {
+      response?: { data?: { message?: string } };
+      message?: string;
+    };
+
+    const message =
+      err?.response?.data?.message ||
+      err?.message ||
+      'Invalid credentials. Please try again.';
+
+    setApiError(message);
+    toast.error(message);
+  }
+};
 
   return (
     <Box sx={{

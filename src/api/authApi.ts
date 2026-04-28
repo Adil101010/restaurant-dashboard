@@ -3,6 +3,7 @@ import type { LoginRequest, LoginResponse, RefreshTokenResponse } from '../types
 
 
 export interface RegisterRequest {
+   name: string; 
   email: string;
   password: string;
   phone: string;
@@ -29,12 +30,12 @@ export const authApi = {
   },
 
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
-    const response = await axiosInstance.post<LoginResponse>(
-      '/api/auth/restaurant/login',
-      credentials
-    );
-    return response.data;
-  },
+  const response = await axiosInstance.post<LoginResponse>(
+    '/api/auth/restaurant/login',
+    credentials
+  );
+  return response.data;
+},
 
   refreshToken: async (refreshToken: string): Promise<RefreshTokenResponse> => {
     const response = await axiosInstance.post<RefreshTokenResponse>(

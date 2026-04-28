@@ -1,21 +1,28 @@
 export interface LoginRequest {
-   emailOrPhone: string;
+  emailOrPhone: string;
   password: string;
-  expectedRole?: string; 
+  expectedRole?: string;
 }
 
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
-   userId: number; 
-  restaurantName: string;
+  userId: number;
   email: string;
-  restaurantId: number; 
+  phone: string;
+  role: string;
+  restaurantId: number | null;
+  restaurantName: string | null;
+  accessTokenExpiresIn: number;
+  refreshTokenExpiresIn: number;
+  isEmailVerified: boolean;
+  isPhoneVerified: boolean;
 }
 
 export interface AuthUser {
-  restaurantId: number;
-  restaurantName: string;
+  userId: number;
+  restaurantId: number | null;      
+  restaurantName: string | null;    
   email: string;
 }
 
